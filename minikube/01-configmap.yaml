@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: image-service-config
+  namespace: cv-platform
+data:
+  IMG_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres-svc:5432/images"
+  IMG_STORAGE_BASE_DIR: "/data/images"
+  IMG_PROCESSING_MAX_WORKERS: "2"
+  IMG_DB_POOL_SIZE: "5"
+  IMG_DB_MAX_OVERFLOW: "10"
+  IMG_RETENTION_BATCH_SIZE: "50"
+  IMG_DEBUG: "true"

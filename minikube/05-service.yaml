@@ -1,0 +1,15 @@
+# NodePort service — accessible via `minikube service`
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-service
+  namespace: cv-platform
+spec:
+  selector:
+    app: image-service
+  ports:
+    - port: 80
+      targetPort: 8000
+      nodePort: 30080
+      protocol: TCP
+  type: NodePort

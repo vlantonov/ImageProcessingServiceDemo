@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      IMG_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/images"
+      IMG_STORAGE_BASE_DIR: "/data/images"
+      IMG_PROCESSING_MAX_WORKERS: "4"
+      IMG_DEBUG: "true"
+    volumes:
+      - image_data:/data/images
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: images
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pg_data:
+  image_data:
