@@ -146,7 +146,7 @@
 | NFR-6.2 | Mocked use case tests | `tests/application/` — `AsyncMock` for all ports |
 | NFR-6.3 | Infrastructure integration tests | `tests/infrastructure/` — real Pillow + filesystem |
 | NFR-6.4 | API integration tests | `tests/presentation/` — `TestClient` + dependency overrides |
-| NFR-6.5 | No external services | All 29 tests pass without a running database |
+| NFR-6.5 | No external services | All tests pass without a running database |
 | NFR-7.1 | C++ bilinear resize | `cpp/fast_resize.cpp` — `bilinear_resize()` function |
 | NFR-7.2 | pybind11 bindings | `PYBIND11_MODULE(fast_resize, m)` in `fast_resize.cpp` |
 | NFR-7.3 | CMake build | `cpp/CMakeLists.txt` + `cpp/build.sh` |
