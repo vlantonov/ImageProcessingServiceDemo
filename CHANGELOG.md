@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-27
+
 ### Added
 
 - Clean Architecture image processing microservice with FastAPI, SQLAlchemy 2.0 (async),
@@ -34,5 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Minikube demo script corrections.
 - Miscellaneous code fixes and AGENTS.md refinements.
+- Use `StrEnum` instead of `(str, Enum)` for `ProcessingStatus` (ruff UP042).
+- Use `Annotated[T, Depends(...)]` instead of bare `Depends()` defaults in FastAPI routes (ruff B008).
+- Replace mutable default `[]` with `None` for `tags` query parameter (ruff B006/RUF013).
+- Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
+- Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/commits/main
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/releases/tag/v1.0.0

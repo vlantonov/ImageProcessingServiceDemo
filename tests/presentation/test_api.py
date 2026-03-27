@@ -79,9 +79,7 @@ def client(image_response) -> TestClient:
 
     mock_list = AsyncMock(spec=ListImagesUseCase)
     mock_list.execute = AsyncMock(
-        return_value=ImageListResponse(
-            images=[image_response], total=1, offset=0, limit=50
-        )
+        return_value=ImageListResponse(images=[image_response], total=1, offset=0, limit=50)
     )
 
     mock_process = AsyncMock(spec=ProcessImageUseCase)

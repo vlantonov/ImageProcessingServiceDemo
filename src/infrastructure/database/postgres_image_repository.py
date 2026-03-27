@@ -47,7 +47,7 @@ class PostgresImageRepository(ImageRepository):
         async with self._session_factory() as session, session.begin():
             stmt = delete(ImageModel).where(ImageModel.id == image_id)
             result = await session.execute(stmt)
-            return result.rowcount > 0  # type: ignore[union-attr]
+            return result.rowcount > 0  # type: ignore[attr-defined]
 
     async def get_expired(self, batch_size: int = 100) -> list[Image]:
         now = datetime.now(UTC)
