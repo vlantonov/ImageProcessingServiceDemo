@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import io
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -33,8 +33,8 @@ def sample_image_entity() -> Image:
         original_path="/data/images/abc123_test.png",
         status=ProcessingStatus.PENDING,
         tags=["test"],
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
@@ -48,8 +48,8 @@ def completed_image_entity() -> Image:
         metadata=ImageMetadata(width=100, height=80, format="PNG", size_bytes=1024, channels=3),
         status=ProcessingStatus.COMPLETED,
         tags=["processed"],
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 

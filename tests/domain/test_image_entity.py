@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.domain.entities.image import Image, ImageMetadata, ProcessingStatus
 
@@ -38,12 +38,12 @@ class TestImage:
         assert img.is_expired() is False
 
     def test_is_expired_future(self):
-        future = datetime.now(timezone.utc) + timedelta(hours=24)
+        future = datetime.now(UTC) + timedelta(hours=24)
         img = Image(filename="photo.jpg", original_path="/data/photo.jpg", expires_at=future)
         assert img.is_expired() is False
 
     def test_is_expired_past(self):
-        past = datetime.now(timezone.utc) - timedelta(hours=1)
+        past = datetime.now(UTC) - timedelta(hours=1)
         img = Image(filename="photo.jpg", original_path="/data/photo.jpg", expires_at=past)
         assert img.is_expired() is True
 

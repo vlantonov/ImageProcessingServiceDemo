@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -19,7 +19,7 @@ async def test_retention_deletes_expired(mock_repository, mock_storage):
         original_path="/data/old.png",
         thumbnail_path="/data/thumb_old.png",
         status=ProcessingStatus.COMPLETED,
-        expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        expires_at=datetime.now(UTC) - timedelta(hours=1),
     )
     mock_repository.get_expired.return_value = [expired_img]
 

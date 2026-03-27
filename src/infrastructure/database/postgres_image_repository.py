@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -44,14 +44,13 @@ class PostgresImageRepository(ImageRepository):
             return [_model_to_entity(row) for row in result.scalars().all()]
 
     async def delete(self, image_id: uuid.UUID) -> bool:
-        async with self._session_factory() as session:
-            async with session.begin():
-                stmt = delete(ImageModel).where(ImageModel.id == image_id)
-                result = await session.execute(stmt)
-                return result.rowcount > 0  # type: ignore[union-attr]
+        async with self._session_factory() as session, session.begin():
+            stmt = delete(ImageModel).where(ImageModel.id == image_id)
+            result = await session.execute(stmt)
+            return result.rowcount > 0  # type: ignore[union-attr]
 
     async def get_expired(self, batch_size: int = 100) -> list[Image]:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         async with self._session_factory() as session:
             stmt = (
                 select(ImageModel)

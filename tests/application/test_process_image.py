@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from src.application.use_cases.process_image import ProcessImageUseCase
-from src.domain.entities.image import Image, ProcessingStatus
+from src.domain.entities.image import ProcessingStatus
 
 
 @pytest.mark.asyncio
