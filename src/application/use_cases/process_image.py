@@ -37,9 +37,7 @@ class ProcessImageUseCase:
             raw_data = await self._storage.retrieve(image.original_path)
             result = await self._processor.generate_thumbnail(raw_data)
 
-            thumb_path = await self._storage.store(
-                f"thumb_{image.filename}", result.thumbnail_data
-            )
+            thumb_path = await self._storage.store(f"thumb_{image.filename}", result.thumbnail_data)
 
             metadata = ImageMetadata(
                 width=result.width,

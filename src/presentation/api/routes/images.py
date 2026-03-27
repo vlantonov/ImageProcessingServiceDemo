@@ -34,15 +34,17 @@ MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
 @router.post("/", response_model=ImageOut, status_code=status.HTTP_201_CREATED)
 async def upload_image(
     file: UploadFile,
-    tags: Annotated[list[str], Query()] = [],
+    tags: Annotated[list[str] | None, Query()] = None,
     ttl_hours: Annotated[int | None, Query(ge=1, le=8760)] = None,
-    use_case: UploadImageUseCase = Depends(get_upload_use_case),
+    use_case: Annotated[UploadImageUseCase, Depends(get_upload_use_case)] = None,  # type: ignore[assignment]
 ):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Content type {file.content_type} not supported",
         )
+    if tags is None:
+        tags = []
     data = await file.read()
     if len(data) > MAX_UPLOAD_SIZE:
         raise HTTPException(
@@ -63,7 +65,7 @@ async def list_images(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
-    use_case: ListImagesUseCase = Depends(get_list_use_case),
+    use_case: Annotated[ListImagesUseCase, Depends(get_list_use_case)] = None,  # type: ignore[assignment]
 ):
     return await use_case.execute(offset=offset, limit=limit, status=status_filter)
 
@@ -71,7 +73,7 @@ async def list_images(
 @router.get("/{image_id}", response_model=ImageOut)
 async def get_image(
     image_id: uuid.UUID,
-    use_case: GetImageUseCase = Depends(get_get_image_use_case),
+    use_case: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
 ):
     result = await use_case.execute(image_id)
     if result is None:
@@ -83,7 +85,7 @@ async def get_image(
 async def download_image(
     image_id: uuid.UUID,
     thumbnail: bool = False,
-    use_case: GetImageUseCase = Depends(get_get_image_use_case),
+    use_case: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
 ):
     data = await use_case.get_file(image_id, thumbnail=thumbnail)
     if data is None:
@@ -94,7 +96,7 @@ async def download_image(
 @router.post("/batch/process", response_model=BatchProcessResponse)
 async def process_batch_images(
     body: BatchProcessRequest,
-    use_case: ProcessImageUseCase = Depends(get_process_use_case),
+    use_case: Annotated[ProcessImageUseCase, Depends(get_process_use_case)] = None,  # type: ignore[assignment]
 ):
     result = await process_batch(use_case, body.image_ids, concurrency=body.concurrency)
     return result
@@ -103,8 +105,8 @@ async def process_batch_images(
 @router.post("/{image_id}/process", response_model=ImageOut)
 async def process_single_image(
     image_id: uuid.UUID,
-    process_uc: ProcessImageUseCase = Depends(get_process_use_case),
-    get_uc: GetImageUseCase = Depends(get_get_image_use_case),
+    process_uc: Annotated[ProcessImageUseCase, Depends(get_process_use_case)] = None,  # type: ignore[assignment]
+    get_uc: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
 ):
     ok = await process_uc.execute(image_id)
     if not ok:
