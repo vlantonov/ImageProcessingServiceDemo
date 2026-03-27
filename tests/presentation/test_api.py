@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import io
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -44,8 +44,8 @@ def image_response(image_id) -> ImageResponse:
         format=None,
         size_bytes=None,
         tags=["test"],
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         expires_at=None,
         thumbnail_available=False,
     )

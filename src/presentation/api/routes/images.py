@@ -91,6 +91,15 @@ async def download_image(
     return Response(content=data, media_type="application/octet-stream")
 
 
+@router.post("/batch/process", response_model=BatchProcessResponse)
+async def process_batch_images(
+    body: BatchProcessRequest,
+    use_case: ProcessImageUseCase = Depends(get_process_use_case),
+):
+    result = await process_batch(use_case, body.image_ids, concurrency=body.concurrency)
+    return result
+
+
 @router.post("/{image_id}/process", response_model=ImageOut)
 async def process_single_image(
     image_id: uuid.UUID,
@@ -101,12 +110,3 @@ async def process_single_image(
     if not ok:
         raise HTTPException(status_code=404, detail="Image not found")
     return await get_uc.execute(image_id)
-
-
-@router.post("/batch/process", response_model=BatchProcessResponse)
-async def process_batch_images(
-    body: BatchProcessRequest,
-    use_case: ProcessImageUseCase = Depends(get_process_use_case),
-):
-    result = await process_batch(use_case, body.image_ids, concurrency=body.concurrency)
-    return result

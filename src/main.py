@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.infrastructure.database.models import Base
-from src.presentation.api.dependencies import _session_factory, get_settings
+from src.presentation.api.dependencies import get_settings
 from src.presentation.api.middleware import RequestLoggingMiddleware
 from src.presentation.api.routes import health, images, retention
 

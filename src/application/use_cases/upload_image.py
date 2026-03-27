@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.application.dto.image_dto import ImageResponse
 from src.domain.entities.image import Image
@@ -26,7 +26,7 @@ class UploadImageUseCase:
 
         expires_at = None
         if ttl_hours is not None:
-            expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl_hours)
+            expires_at = datetime.now(UTC) + timedelta(hours=ttl_hours)
 
         image = Image(
             filename=filename,

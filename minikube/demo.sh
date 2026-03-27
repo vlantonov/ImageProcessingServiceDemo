@@ -136,7 +136,7 @@ fi
 info "8. Batch Process (parallel processing of multiple images)"
 REMAINING_IDS=$(printf '"%s",' "${IMAGE_IDS[@]:1}")
 REMAINING_IDS="[${REMAINING_IDS%,}]"
-echo "  POST /api/v1/images/batch/process with ${#IMAGE_IDS[@]-1} images, concurrency=4"
+echo "  POST /api/v1/images/batch/process with $((${#IMAGE_IDS[@]} - 1)) images, concurrency=4"
 
 RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X POST "${BASE_URL}/api/v1/images/batch/process" \
