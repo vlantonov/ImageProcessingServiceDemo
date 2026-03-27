@@ -42,58 +42,22 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 - **mypy** ≥1.13 (strict mode)
 - **pytest** ≥8.0 with pytest-asyncio (asyncio_mode = "auto")
 
-## Project Structure (Clean Architecture)
+## Architecture (Clean Architecture — 4 Layers)
 
-```
-src/
-├── config.py                          # Settings via pydantic-settings (env prefix: IMG_)
-├── main.py                            # FastAPI app factory
-├── domain/                            # Layer 1: Pure business logic, ZERO external deps
-│   ├── entities/
-│   │   ├── image.py                   # Image dataclass + ProcessingStatus enum
-│   │   └── retention_policy.py        # Tag-based retention rules
-│   └── interfaces/                    # Abstract ports (ABC)
-│       ├── image_repository.py
-│       ├── image_storage.py
-│       └── image_processor.py
-├── application/                       # Layer 2: Use cases, orchestration
-│   ├── dto/image_dto.py               # Frozen dataclasses for data transfer
-│   └── use_cases/
-│       ├── upload_image.py
-│       ├── process_image.py
-│       ├── get_image.py
-│       ├── list_images.py
-│       └── apply_retention.py
-├── infrastructure/                    # Layer 3: Concrete adapters
-│   ├── database/
-│   │   ├── models.py                  # SQLAlchemy ORM models
-│   │   ├── postgres_image_repository.py
-│   │   └── session.py                 # Async engine + session factory
-│   ├── processing/
-│   │   ├── pillow_processor.py        # ProcessPoolExecutor for CPU-bound work
-│   │   └── pipeline.py               # Bounded concurrency with Semaphore
-│   └── storage/
-│       └── local_image_storage.py     # Content-addressed filesystem storage
-└── presentation/                      # Layer 4: FastAPI routes, schemas, middleware
-    ├── api/
-    │   ├── dependencies.py            # DI wiring via @lru_cache factories
-    │   ├── middleware.py              # Request logging middleware
-    │   └── routes/
-    │       ├── health.py
-    │       ├── images.py
-    │       └── retention.py
-    └── schemas/
-        └── image_schemas.py           # Pydantic request/response models
+The codebase follows strict **Clean Architecture** with four layers under `src/`:
 
-tests/
-├── conftest.py                        # Shared fixtures (sample images, mock ports)
-├── domain/                            # Unit tests — no external deps
-├── application/                       # Use case tests with mocked ports
-├── infrastructure/                    # Integration tests (real Pillow, filesystem)
-└── presentation/                      # API tests with FastAPI TestClient
-```
+| Layer | Location | Purpose |
+|---|---|---|
+| **Domain** | `src/domain/` | Pure business logic, entities, abstract ports (ABC). ZERO external deps. |
+| **Application** | `src/application/` | Use cases and frozen-dataclass DTOs. Depends only on Domain. |
+| **Infrastructure** | `src/infrastructure/` | Concrete adapters: PostgreSQL repository, Pillow processor, filesystem storage. |
+| **Presentation** | `src/presentation/` | FastAPI routes, Pydantic schemas, middleware, DI wiring. |
+
+Tests mirror this structure under `tests/` (domain, application, infrastructure, presentation).
 
 **Dependency rule**: Dependencies point inward only. Domain has no imports from other layers. Application depends only on Domain. Infrastructure and Presentation implement Domain interfaces.
+
+**Key domain concepts**: `Image` entity with `ProcessingStatus` (PENDING → PROCESSING → COMPLETED | FAILED), `RetentionPolicy` for tag-based TTL cleanup, three abstract ports (`ImageRepository`, `ImageStorage`, `ImageProcessor`).
 
 ## Code Style
 
@@ -124,26 +88,6 @@ class ProcessImageUseCase:
 ```
 
 ```python
-# ✅ Good — frozen dataclass DTO
-@dataclass(frozen=True)
-class ImageResponseDTO:
-    id: uuid.UUID
-    filename: str
-    status: str
-    created_at: datetime
-```
-
-```python
-# ✅ Good — dependency injection via FastAPI Depends
-@router.post("/", status_code=status.HTTP_201_CREATED)
-async def upload_image(
-    file: UploadFile,
-    use_case: UploadImageUseCase = Depends(get_upload_use_case),
-) -> ImageResponse:
-    ...
-```
-
-```python
 # ❌ Bad — importing concrete implementations in domain layer
 from src.infrastructure.database.models import ImageModel  # NEVER in domain/
 
@@ -169,7 +113,7 @@ pytest tests/presentation/ -v    # API tests with TestClient
 Fixtures in `tests/conftest.py` provide: `sample_image_bytes`, `sample_image_entity`, `completed_image_entity`, `mock_repository`, `mock_storage`, `mock_processor`.
 
 When writing tests:
-- Use `pytest.mark.asyncio` is automatic (asyncio_mode = "auto")
+- `pytest.mark.asyncio` is automatic (asyncio_mode = "auto")
 - Mock at the port boundary (use `AsyncMock(spec=ImageRepository)`)
 - Infrastructure tests use real implementations with temp directories
 - API tests use `app.dependency_overrides` for DI substitution
@@ -191,3 +135,17 @@ All settings use the `IMG_` environment variable prefix via pydantic-settings. K
 - ✅ **Always do**: Run `ruff check` and `pytest` before committing. Follow the 4-layer dependency rule. Use abstract ports in domain/application layers. Write type hints for all function signatures.
 - ⚠️ **Ask first**: Database schema changes (`models.py`), adding new dependencies to `requirements.txt`, modifying Dockerfile or k8s manifests, changing the DI wiring in `dependencies.py`.
 - 🚫 **Never do**: Import infrastructure/presentation code in the domain layer. Commit database credentials or secrets. Modify `__pycache__/` or `.egg-info/` directories. Remove failing tests without authorization. Use synchronous database calls — all DB access must be async.
+
+## Progressive Disclosure
+
+This AGENTS.md is intentionally kept focused. For detailed reference:
+
+- **Ruff/mypy config**: See `pyproject.toml` for full linting rules, line-length, and type-checking settings.
+- **Database schema**: See `src/infrastructure/database/models.py` for ORM models and indexes.
+- **DI wiring**: See `src/presentation/api/dependencies.py` for how use cases are assembled.
+- **Test fixtures**: See `tests/conftest.py` for all shared fixtures and mock factories.
+- **Docker/K8s**: See `docker-compose.yml`, `k8s/`, and `minikube/` for deployment manifests.
+- **API endpoints**: See `src/presentation/api/routes/` or run the dev server and visit `/docs`.
+- **C++ extension**: See `cpp/` for the optional pybind11-based fast resize module.
+
+Avoid adding reactive rules here. If a rule only applies to one domain (e.g., testing patterns, API design), put it in a doc close to that code instead of growing this file.
