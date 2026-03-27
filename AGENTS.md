@@ -128,9 +128,9 @@ All settings use the `IMG_` environment variable prefix via pydantic-settings. K
 
 ## Boundaries
 
-- ✅ **Always do**: Run `ruff check` and `pytest` before committing. Follow the 4-layer dependency rule. Use abstract ports in domain/application layers. Write type hints for all function signatures.
+- ✅ **Always do**: Run `ruff check` and `pytest` before committing. Follow the 4-layer dependency rule. Use abstract ports in domain/application layers. Write type hints for all function signatures. Update `CHANGELOG.md` for every user-facing change.
 - ⚠️ **Ask first**: Database schema changes (`models.py`), adding new dependencies to `requirements.txt`, modifying Dockerfile or k8s manifests, changing the DI wiring in `dependencies.py`.
-- 🚫 **Never do**: Import infrastructure/presentation code in the domain layer. Commit database credentials or secrets. Modify `__pycache__/` or `.egg-info/` directories. Remove failing tests without authorization. Use synchronous database calls — all DB access must be async.
+- 🚫 **Never do**: Import infrastructure/presentation code in the domain layer. Commit database credentials or secrets. Modify `__pycache__/` or `.egg-info/` directories. Remove failing tests without authorization. Use synchronous database calls — all DB access must be async. Dump git log output into `CHANGELOG.md`.
 
 ## When Stuck
 
@@ -138,9 +138,21 @@ All settings use the `IMG_` environment variable prefix via pydantic-settings. K
 - For new features: consider writing or updating tests first, then code until green.
 - For regressions: add a failing test that reproduces the bug, then fix to green.
 
+## Changelog
+
+This project keeps a `CHANGELOG.md` following [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+- Add every notable change under `## [Unreleased]` using the correct category:
+  `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+- Write entries for humans, not machines — describe *what* changed and *why* it matters.
+- At release time, move `[Unreleased]` entries into a new `## [x.y.z] - YYYY-MM-DD` section.
+- Use ISO 8601 dates (`YYYY-MM-DD`). Latest version comes first.
+- Keep comparison links at the bottom of the file.
+
 ## PR Checklist
 
 - Lint, type-check, and tests: all green before commit.
+- `CHANGELOG.md` updated under `[Unreleased]` with the appropriate change type.
 - Diff is small and focused. Include a brief summary of what changed and why.
 - Remove excessive debug logs or commented-out code before submitting.
 
@@ -155,6 +167,7 @@ This AGENTS.md is intentionally kept focused. For detailed reference:
 - **Docker/K8s**: See `docker-compose.yml`, `k8s/`, and `minikube/` for deployment manifests.
 - **API endpoints**: See `src/presentation/api/routes/` or run the dev server and visit `/docs`.
 - **C++ extension**: See `cpp/` for the optional pybind11-based fast resize module.
+- **Changelog**: See `CHANGELOG.md` for the project change history ([Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)).
 
 Avoid adding reactive rules here. If a rule only applies to one domain (e.g., testing patterns, API design), put it in a doc close to that code instead of growing this file.
 
