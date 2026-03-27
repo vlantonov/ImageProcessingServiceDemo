@@ -5,30 +5,26 @@ You are an expert Python backend engineer working on a **Clean Architecture imag
 ## Commands
 
 ```bash
-# Run all tests (no external services needed — everything is mocked)
-pytest -v
+# File-scoped checks (preferred — fast, use after every edit)
+ruff check path/to/file.py --fix        # Lint single file
+ruff format path/to/file.py             # Format single file
+mypy path/to/file.py                    # Type-check single file
+pytest path/to/test_file.py -v          # Run single test file
 
-# Run tests with coverage
-pytest --cov=src --cov-report=term-missing
+# Project-wide checks (use before commits, not after every edit)
+pytest -v                                # All tests (no external services needed)
+pytest --cov=src --cov-report=term-missing  # Tests with coverage
+mypy src/                                # Full type checking
+ruff check src/ tests/ --fix             # Lint all
+ruff format src/ tests/                  # Format all
 
-# Type checking
-mypy src/
-
-# Lint and auto-fix
-ruff check src/ tests/ --fix
-
-# Format code
-ruff format src/ tests/
-
-# Build and run with Docker Compose
-docker compose up --build
-
-# Build C++ extension (optional)
-cd cpp && bash build.sh
-
-# Start dev server (requires running PostgreSQL)
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+# Build and deploy
+docker compose up --build                # Build and run with Docker Compose
+cd cpp && bash build.sh                  # Build C++ extension (optional)
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload  # Dev server (needs PostgreSQL)
 ```
+
+Always lint, type-check, and test updated files. Use project-wide commands sparingly.
 
 ## Tech Stack
 
@@ -136,6 +132,18 @@ All settings use the `IMG_` environment variable prefix via pydantic-settings. K
 - ⚠️ **Ask first**: Database schema changes (`models.py`), adding new dependencies to `requirements.txt`, modifying Dockerfile or k8s manifests, changing the DI wiring in `dependencies.py`.
 - 🚫 **Never do**: Import infrastructure/presentation code in the domain layer. Commit database credentials or secrets. Modify `__pycache__/` or `.egg-info/` directories. Remove failing tests without authorization. Use synchronous database calls — all DB access must be async.
 
+## When Stuck
+
+- Ask a clarifying question or propose a short plan before making large speculative changes.
+- For new features: consider writing or updating tests first, then code until green.
+- For regressions: add a failing test that reproduces the bug, then fix to green.
+
+## PR Checklist
+
+- Lint, type-check, and tests: all green before commit.
+- Diff is small and focused. Include a brief summary of what changed and why.
+- Remove excessive debug logs or commented-out code before submitting.
+
 ## Progressive Disclosure
 
 This AGENTS.md is intentionally kept focused. For detailed reference:
@@ -149,3 +157,12 @@ This AGENTS.md is intentionally kept focused. For detailed reference:
 - **C++ extension**: See `cpp/` for the optional pybind11-based fast resize module.
 
 Avoid adding reactive rules here. If a rule only applies to one domain (e.g., testing patterns, API design), put it in a doc close to that code instead of growing this file.
+
+## Cross-Tool Compatibility
+
+For tools that don't read `AGENTS.md` natively, create a pointer file:
+
+```markdown
+# CLAUDE.md
+Strictly follow the rules in ./AGENTS.md
+```
