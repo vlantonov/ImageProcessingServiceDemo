@@ -148,11 +148,20 @@ This project keeps a `CHANGELOG.md` following [Keep a Changelog 1.1.0](https://k
 - At release time, move `[Unreleased]` entries into a new `## [x.y.z] - YYYY-MM-DD` section.
 - Use ISO 8601 dates (`YYYY-MM-DD`). Latest version comes first.
 - Keep comparison links at the bottom of the file.
+- **Version bump rule**: Before merging a PR, inspect the diff to determine the correct
+  [Semantic Versioning](https://semver.org/spec/v2.0.0.html) bump:
+  - **MAJOR** — breaking API changes, removed endpoints, incompatible schema migrations.
+  - **MINOR** — new features, new endpoints, backward-compatible additions.
+  - **PATCH** — bug fixes, refactors, documentation, dependency updates, style fixes.
+  Update the version in `pyproject.toml` and move `[Unreleased]` entries into the new
+  version section in `CHANGELOG.md`.
 
 ## PR Checklist
 
 - Lint, type-check, and tests: all green before commit.
 - `CHANGELOG.md` updated under `[Unreleased]` with the appropriate change type.
+- Inspect the full diff to determine the correct SemVer bump (MAJOR/MINOR/PATCH).
+  Update version in `pyproject.toml` and `CHANGELOG.md` accordingly before merge.
 - Diff is small and focused. Include a brief summary of what changed and why.
 - Remove excessive debug logs or commented-out code before submitting.
 
