@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitLab CI pipeline (`.gitlab-ci.yml`) mirroring the GitHub Actions setup: Python
+  lint/test on 3.11 and 3.12, C++ build with GCC/Clang, and clang-tidy lint.
+
 ## [1.1.0] - 2026-03-28
 
 ### Added
