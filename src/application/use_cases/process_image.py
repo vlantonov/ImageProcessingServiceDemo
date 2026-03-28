@@ -6,12 +6,15 @@ ProcessPoolExecutor via asyncio.
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 from src.domain.entities.image import ImageMetadata
 from src.domain.interfaces.image_processor import ImageProcessor
 from src.domain.interfaces.image_repository import ImageRepository
 from src.domain.interfaces.image_storage import ImageStorage
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessImageUseCase:
@@ -48,6 +51,7 @@ class ProcessImageUseCase:
             )
             image.mark_completed(thumb_path, metadata)
         except Exception:
+            logger.exception("Failed to process image %s", image_id)
             image.mark_failed()
             await self._repository.save(image)
             raise
