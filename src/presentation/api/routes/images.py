@@ -48,7 +48,7 @@ async def upload_image(
         tags = []
     if len(tags) > MAX_TAGS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Maximum {MAX_TAGS} tags allowed",
         )
     data = await file.read()
