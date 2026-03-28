@@ -13,7 +13,7 @@ The system is built according to strict **Clean Architecture** principles with f
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Presentation Layer  (FastAPI routes, Pydantic schemas,         │
-│                       middleware, dependency injection)          │
+│                       middleware, dependency injection)         │
 ├─────────────────────────────────────────────────────────────────┤
 │  Application Layer   (use cases, DTOs — orchestration logic)    │
 ├─────────────────────────────────────────────────────────────────┤

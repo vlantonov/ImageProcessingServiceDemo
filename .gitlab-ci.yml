@@ -1,0 +1,109 @@
+stages:
+  - lint
+  - test
+  - build
+
+# ---------------------------------------------------------------------------
+# Python jobs
+# ---------------------------------------------------------------------------
+
+.python_setup: &python_setup
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt -r requirements-dev.txt
+
+python-lint:3.11:
+  stage: lint
+  image: python:3.11
+  <<: *python_setup
+  script:
+    - ruff check src/ tests/
+    - ruff format --check src/ tests/
+    - mypy src/
+
+python-lint:3.12:
+  stage: lint
+  image: python:3.12
+  <<: *python_setup
+  script:
+    - ruff check src/ tests/
+    - ruff format --check src/ tests/
+    - mypy src/
+
+python-test:3.11:
+  stage: test
+  image: python:3.11
+  <<: *python_setup
+  script:
+    - pip install -e .
+    - pytest -v --tb=short
+    - pytest --cov=src --cov-report=term-missing --cov-fail-under=75
+
+python-test:3.12:
+  stage: test
+  image: python:3.12
+  <<: *python_setup
+  script:
+    - pip install -e .
+    - pytest -v --tb=short
+    - pytest --cov=src --cov-report=term-missing --cov-fail-under=75
+
+# ---------------------------------------------------------------------------
+# C++ jobs
+# ---------------------------------------------------------------------------
+
+.cpp_rules:
+  rules:
+    - changes:
+        - cpp/**/*
+
+.cpp_setup: &cpp_setup
+  before_script:
+    - apt-get update && apt-get install -y cmake g++ clang clang-tidy
+    - pip install pybind11
+
+cpp-build-gcc:
+  stage: build
+  image: python:3.12
+  extends: .cpp_rules
+  <<: *cpp_setup
+  variables:
+    CC: gcc
+    CXX: g++
+  script:
+    - cd cpp
+    - mkdir -p build && cd build
+    - cmake .. -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+    - cmake --build . --config Release -j "$(nproc)"
+    - ls -la fast_resize*.so
+
+cpp-build-clang:
+  stage: build
+  image: python:3.12
+  extends: .cpp_rules
+  <<: *cpp_setup
+  variables:
+    CC: clang
+    CXX: clang++
+  script:
+    - cd cpp
+    - mkdir -p build && cd build
+    - cmake .. -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+    - cmake --build . --config Release -j "$(nproc)"
+    - ls -la fast_resize*.so
+
+cpp-lint:
+  stage: lint
+  image: python:3.12
+  extends: .cpp_rules
+  <<: *cpp_setup
+  script:
+    - cd cpp
+    - mkdir -p build && cd build
+    - cmake ..
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+    - cd ..
+    - clang-tidy -p build fast_resize.cpp
+        --checks='-*,readability-*,bugprone-*,performance-*,modernize-*,-modernize-use-trailing-return-type'
+        --warnings-as-errors='bugprone-*'

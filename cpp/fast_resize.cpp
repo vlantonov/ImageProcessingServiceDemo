@@ -46,7 +46,7 @@ std::vector<uint8_t> bilinear_resize(
     if (src_w <= 0 || src_h <= 0 || dst_w <= 0 || dst_h <= 0) {
         throw std::invalid_argument("dimensions must be positive");
     }
-    if (static_cast<size_t>(src_w * src_h * channels) != src.size()) {
+    if (static_cast<size_t>(src_w) * src_h * channels != src.size()) {
         throw std::invalid_argument("src buffer size mismatch");
     }
 

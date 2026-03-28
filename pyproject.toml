@@ -1,6 +1,6 @@
 [project]
 name = "image-processing-service"
-version = "1.0.2"
+version = "1.1.0"
 description = "High-performance image processing microservice with Clean Architecture"
 requires-python = ">=3.11"
 dependencies = [
@@ -19,6 +19,7 @@ dependencies = [
 dev = [
     "pytest>=8.0,<9",
     "pytest-asyncio>=0.24,<1",
+    "pytest-cov>=6.0,<8",
     "httpx>=0.28,<1",
     "aiosqlite>=0.20,<1",
     "ruff>=0.8,<1",
