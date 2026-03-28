@@ -1,0 +1,84 @@
+name: C++ CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cpp/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "cpp/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+          pip install pybind11
+
+      - name: Build C++ extension
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cd cpp
+          mkdir -p build && cd build
+          cmake .. -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+          cmake --build . --config Release -j "$(nproc)"
+
+      - name: Verify module built
+        run: ls -la cpp/build/fast_resize*.so
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pybind11
+        run: pip install pybind11
+
+      - name: Generate compile_commands.json
+        run: |
+          cd cpp
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -Dpybind11_DIR="$(python3 -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+
+      - name: Run clang-tidy
+        run: |
+          cd cpp
+          clang-tidy -p build fast_resize.cpp \
+            --checks='-*,readability-*,bugprone-*,performance-*,modernize-*,-modernize-use-trailing-return-type' \
+            --warnings-as-errors='bugprone-*'

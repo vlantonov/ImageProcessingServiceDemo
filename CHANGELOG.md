@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitHub Actions CI workflow for Python: ruff lint/format, mypy type checking, and pytest
+  with coverage on Python 3.11 and 3.12.
+- GitHub Actions CI workflow for C++: build with GCC and Clang, clang-tidy lint
+  (triggered on `cpp/` path changes).
+- `pytest-cov` added to dev dependencies for coverage reporting.
+
+### Fixed
+
+- Integer overflow in `fast_resize.cpp` `bilinear_resize` buffer size check: cast to
+  `size_t` before multiplication instead of after.
+
 ## [1.0.2] - 2026-03-28
 
 ### Fixed
