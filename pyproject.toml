@@ -1,6 +1,6 @@
 [project]
 name = "image-processing-service"
-version = "1.0.1"
+version = "1.0.2"
 description = "High-performance image processing microservice with Clean Architecture"
 requires-python = ">=3.11"
 dependencies = [

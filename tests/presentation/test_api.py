@@ -122,6 +122,15 @@ class TestImageUpload:
         )
         assert resp.status_code == 415
 
+    def test_upload_too_many_tags(self, client, png_upload_bytes):
+        tags = [f"tag{i}" for i in range(21)]
+        resp = client.post(
+            "/api/v1/images/",
+            files={"file": ("test.png", png_upload_bytes, "image/png")},
+            params={"tags": tags},
+        )
+        assert resp.status_code == 422
+
 
 class TestImageList:
     def test_list_images(self, client):

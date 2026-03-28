@@ -29,6 +29,7 @@ router = APIRouter(prefix="/api/v1/images", tags=["images"])
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/tiff"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+MAX_TAGS = 20
 
 
 @router.post("/", response_model=ImageOut, status_code=status.HTTP_201_CREATED)
@@ -45,6 +46,11 @@ async def upload_image(
         )
     if tags is None:
         tags = []
+    if len(tags) > MAX_TAGS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Maximum {MAX_TAGS} tags allowed",
+        )
     data = await file.read()
     if len(data) > MAX_UPLOAD_SIZE:
         raise HTTPException(

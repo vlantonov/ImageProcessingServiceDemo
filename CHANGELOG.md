@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-03-28
+
+### Fixed
+
+- Upload route now enforces a maximum of 20 tags per image (FR-1.5, NFR-5.5).
+  Previously the `ImageUploadParams` schema had the constraint but the route did not apply it.
+- `ProcessImageUseCase` now logs processing failures via `logger.exception()` before marking
+  the image as `FAILED` (FR-2.6, FR-5.2), improving observability for debugging.
+- Replaced deprecated `HTTP_422_UNPROCESSABLE_ENTITY` with `HTTP_422_UNPROCESSABLE_CONTENT`.
+
+### Added
+
+- `test_upload_too_many_tags` API test covering the 20-tag limit enforcement.
+
+### Changed
+
+- `REQUIREMENTS.md` updated with refined functional and non-functional requirements,
+  covering edge cases (tag limits, TTL ranges, batch bounds, error-resilient sweep,
+  partial indexes, K8s resource specs, PVC details).
+
 ## [1.0.1] - 2026-03-27
 
 ### Added
