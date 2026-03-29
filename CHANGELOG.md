@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fetch the same rows, causing double-delete attempts on storage files. Added
   `delete_expired_batch()` which uses `SELECT … FOR UPDATE SKIP LOCKED` to
   atomically claim and delete expired rows in a single transaction.
+- `ProcessImageUseCase` now cleans up the stored thumbnail if the final
+  metadata save fails, preventing orphaned files and an image stuck in
+  `PROCESSING` state.
 
 ## [1.2.0] - 2026-03-29
 
