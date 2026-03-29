@@ -22,6 +22,7 @@
 #include <pybind11/stl.h>
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
@@ -34,81 +35,88 @@ namespace py = pybind11;
 
 namespace fast_resize {
 
+constexpr float MAX_CHANNEL_VALUE = 255.0F;
+
 // ── SSE2 SIMD path ─────────────────────────────────────────────────────────
 
 #ifdef __SSE2__
 
 /// Unpack the low 4 bytes of a 128-bit int register to 4 floats.
-static inline __m128 unpack_u8x4_to_ps(__m128i v) {
+static inline __m128 unpack_u8x4_to_ps(__m128i packed) {
     const __m128i zero = _mm_setzero_si128();
-    const __m128i i16 = _mm_unpacklo_epi8(v, zero);
+    const __m128i i16 = _mm_unpacklo_epi8(packed, zero);
     const __m128i i32 = _mm_unpacklo_epi16(i16, zero);
     return _mm_cvtepi32_ps(i32);
 }
 
 /// Pack 4 floats (clamped to [0,255]) to the low 4 bytes of a 128-bit int register.
-static inline __m128i pack_ps_to_u8x4(__m128 v) {
-    v = _mm_max_ps(_mm_min_ps(v, _mm_set1_ps(255.0f)), _mm_setzero_ps());
-    const __m128i i32 = _mm_cvttps_epi32(v);
+static inline __m128i pack_ps_to_u8x4(__m128 values) {
+    values = _mm_max_ps(
+        _mm_min_ps(values, _mm_set1_ps(MAX_CHANNEL_VALUE)), _mm_setzero_ps());
+    const __m128i i32 = _mm_cvttps_epi32(values);
     const __m128i i16 = _mm_packs_epi32(i32, i32);
     return _mm_packus_epi16(i16, i16);
 }
 
 /// Load channels bytes (3 or 4) from ptr into the low bytes of __m128i.
-static inline __m128i load_pixel(const uint8_t* ptr, int channels) {
+static inline __m128i load_pixel(const uint8_t* ptr, int num_channels) {
     int32_t val = 0;
-    std::memcpy(&val, ptr, static_cast<size_t>(channels));
+    std::memcpy(&val, ptr, static_cast<size_t>(num_channels));
     return _mm_cvtsi32_si128(val);
 }
 
 static void bilinear_resize_sse2(
-    const uint8_t* src, int src_w, int src_h, int channels,
+    const uint8_t* src, int src_w,
+    int src_h,  // NOLINT(bugprone-easily-swappable-parameters)
+    int num_channels,
     uint8_t* dst, int dst_w, int dst_h)
 {
+    const auto col_stride = static_cast<ptrdiff_t>(num_channels);
     const float x_ratio = static_cast<float>(src_w) / static_cast<float>(dst_w);
     const float y_ratio = static_cast<float>(src_h) / static_cast<float>(dst_h);
 
-    for (int dy = 0; dy < dst_h; ++dy) {
-        const float src_y = dy * y_ratio;
-        const int y0 = static_cast<int>(src_y);
-        const int y1 = std::min(y0 + 1, src_h - 1);
-        const float fy = src_y - static_cast<float>(y0);
-        const __m128 fy_v = _mm_set1_ps(fy);
-        const __m128 one_minus_fy = _mm_set1_ps(1.0f - fy);
+    for (int dst_y = 0; dst_y < dst_h; ++dst_y) {
+        const float src_y = static_cast<float>(dst_y) * y_ratio;
+        const int row_top = static_cast<int>(src_y);
+        const int row_bot = std::min(row_top + 1, src_h - 1);
+        const float frac_y = src_y - static_cast<float>(row_top);
+        const __m128 frac_y_v = _mm_set1_ps(frac_y);
+        const __m128 one_minus_fy = _mm_set1_ps(1.0F - frac_y);
 
-        const int y0_off = y0 * src_w;
-        const int y1_off = y1 * src_w;
+        const auto top_row_off = static_cast<ptrdiff_t>(row_top) * src_w;
+        const auto bot_row_off = static_cast<ptrdiff_t>(row_bot) * src_w;
 
-        for (int dx = 0; dx < dst_w; ++dx) {
-            const float src_x = dx * x_ratio;
-            const int x0 = static_cast<int>(src_x);
-            const int x1 = std::min(x0 + 1, src_w - 1);
-            const float fx = src_x - static_cast<float>(x0);
-            const __m128 fx_v = _mm_set1_ps(fx);
-            const __m128 one_minus_fx = _mm_set1_ps(1.0f - fx);
+        for (int dst_x = 0; dst_x < dst_w; ++dst_x) {
+            const float src_x = static_cast<float>(dst_x) * x_ratio;
+            const int col_left = static_cast<int>(src_x);
+            const int col_right = std::min(col_left + 1, src_w - 1);
+            const float frac_x = src_x - static_cast<float>(col_left);
+            const __m128 frac_x_v = _mm_set1_ps(frac_x);
+            const __m128 one_minus_fx = _mm_set1_ps(1.0F - frac_x);
 
             // Load four corner pixels and unpack to float
-            const __m128 tl = unpack_u8x4_to_ps(
-                load_pixel(src + (y0_off + x0) * channels, channels));
-            const __m128 tr = unpack_u8x4_to_ps(
-                load_pixel(src + (y0_off + x1) * channels, channels));
-            const __m128 bl = unpack_u8x4_to_ps(
-                load_pixel(src + (y1_off + x0) * channels, channels));
-            const __m128 br = unpack_u8x4_to_ps(
-                load_pixel(src + (y1_off + x1) * channels, channels));
+            const __m128 top_left = unpack_u8x4_to_ps(
+                load_pixel(src + ((top_row_off + col_left) * col_stride), num_channels));
+            const __m128 top_right = unpack_u8x4_to_ps(
+                load_pixel(src + ((top_row_off + col_right) * col_stride), num_channels));
+            const __m128 bot_left = unpack_u8x4_to_ps(
+                load_pixel(src + ((bot_row_off + col_left) * col_stride), num_channels));
+            const __m128 bot_right = unpack_u8x4_to_ps(
+                load_pixel(src + ((bot_row_off + col_right) * col_stride), num_channels));
 
             // Bilinear interpolation on all channels simultaneously
             const __m128 top = _mm_add_ps(
-                _mm_mul_ps(tl, one_minus_fx), _mm_mul_ps(tr, fx_v));
+                _mm_mul_ps(top_left, one_minus_fx), _mm_mul_ps(top_right, frac_x_v));
             const __m128 bottom = _mm_add_ps(
-                _mm_mul_ps(bl, one_minus_fx), _mm_mul_ps(br, fx_v));
+                _mm_mul_ps(bot_left, one_minus_fx), _mm_mul_ps(bot_right, frac_x_v));
             const __m128 result = _mm_add_ps(
-                _mm_mul_ps(top, one_minus_fy), _mm_mul_ps(bottom, fy_v));
+                _mm_mul_ps(top, one_minus_fy), _mm_mul_ps(bottom, frac_y_v));
 
             // Pack back to uint8 and store
-            const int32_t packed = _mm_cvtsi128_si32(pack_ps_to_u8x4(result));
-            uint8_t* dst_pixel = dst + (dy * dst_w + dx) * channels;
-            std::memcpy(dst_pixel, &packed, static_cast<size_t>(channels));
+            const int32_t pixel_packed = _mm_cvtsi128_si32(pack_ps_to_u8x4(result));
+            const auto dst_off =
+                (static_cast<ptrdiff_t>(dst_y) * dst_w + dst_x) * col_stride;
+            std::memcpy(dst + dst_off, &pixel_packed, static_cast<size_t>(num_channels));
         }
     }
 }
@@ -120,36 +128,42 @@ static void bilinear_resize_sse2(
 #ifndef __SSE2__
 
 static void bilinear_resize_scalar(
-    const uint8_t* src, int src_w, int src_h, int channels,
+    const uint8_t* src, int src_w,
+    int src_h,  // NOLINT(bugprone-easily-swappable-parameters)
+    int num_channels,
     uint8_t* dst, int dst_w, int dst_h)
 {
     const float x_ratio = static_cast<float>(src_w) / static_cast<float>(dst_w);
     const float y_ratio = static_cast<float>(src_h) / static_cast<float>(dst_h);
 
-    for (int dy = 0; dy < dst_h; ++dy) {
-        const float src_y = dy * y_ratio;
-        const int y0 = static_cast<int>(src_y);
-        const int y1 = std::min(y0 + 1, src_h - 1);
-        const float fy = src_y - static_cast<float>(y0);
+    for (int dst_y = 0; dst_y < dst_h; ++dst_y) {
+        const float src_y = static_cast<float>(dst_y) * y_ratio;
+        const int row_top = static_cast<int>(src_y);
+        const int row_bot = std::min(row_top + 1, src_h - 1);
+        const float frac_y = src_y - static_cast<float>(row_top);
 
-        for (int dx = 0; dx < dst_w; ++dx) {
-            const float src_x = dx * x_ratio;
-            const int x0 = static_cast<int>(src_x);
-            const int x1 = std::min(x0 + 1, src_w - 1);
-            const float fx = src_x - static_cast<float>(x0);
+        for (int dst_x = 0; dst_x < dst_w; ++dst_x) {
+            const float src_x = static_cast<float>(dst_x) * x_ratio;
+            const int col_left = static_cast<int>(src_x);
+            const int col_right = std::min(col_left + 1, src_w - 1);
+            const float frac_x = src_x - static_cast<float>(col_left);
 
-            for (int c = 0; c < channels; ++c) {
-                const float tl = src[(y0 * src_w + x0) * channels + c];
-                const float tr = src[(y0 * src_w + x1) * channels + c];
-                const float bl = src[(y1 * src_w + x0) * channels + c];
-                const float br = src[(y1 * src_w + x1) * channels + c];
+            for (int chan = 0; chan < num_channels; ++chan) {
+                const float top_left =
+                    src[(row_top * src_w + col_left) * num_channels + chan];
+                const float top_right =
+                    src[(row_top * src_w + col_right) * num_channels + chan];
+                const float bot_left =
+                    src[(row_bot * src_w + col_left) * num_channels + chan];
+                const float bot_right =
+                    src[(row_bot * src_w + col_right) * num_channels + chan];
 
-                const float top    = tl + fx * (tr - tl);
-                const float bottom = bl + fx * (br - bl);
-                const float value  = top + fy * (bottom - top);
+                const float top    = top_left + frac_x * (top_right - top_left);
+                const float bottom = bot_left + frac_x * (bot_right - bot_left);
+                const float value  = top + frac_y * (bottom - top);
 
-                dst[(dy * dst_w + dx) * channels + c] =
-                    static_cast<uint8_t>(std::clamp(value, 0.0f, 255.0f));
+                dst[(dst_y * dst_w + dst_x) * num_channels + chan] =
+                    static_cast<uint8_t>(std::clamp(value, 0.0F, MAX_CHANNEL_VALUE));
             }
         }
     }
@@ -174,7 +188,7 @@ static void bilinear_resize_scalar(
  * @return          Resized flat pixel buffer as NumPy uint8 array
  */
 py::array_t<uint8_t> bilinear_resize(
-    py::array_t<uint8_t, py::array::c_style | py::array::forcecast> src,
+    const py::array_t<uint8_t, py::array::c_style | py::array::forcecast>& src,
     int src_w, int src_h, int channels,
     int dst_w, int dst_h)
 {
@@ -228,7 +242,7 @@ std::pair<int, int> fit_dimensions(int src_w, int src_h, int max_w, int max_h)
 
 }  // namespace fast_resize
 
-
+// NOLINTNEXTLINE(readability-identifier-length)
 PYBIND11_MODULE(fast_resize, m) {
     m.doc() = "Performance-critical image resize operations in C++";
 

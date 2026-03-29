@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per-element copy between Python lists and C++ vectors. CMake builds with
   `-march=native` to enable host-optimal SIMD.
 
+### Fixed
+
+- C++ `fast_resize.cpp` now passes `clang-tidy` with `bugprone-*`, `readability-*`,
+  `performance-*`, and `modernize-*` checks: renamed short identifiers, added explicit
+  `static_cast`, extracted magic numbers to constants, used uppercase float literal
+  suffixes, added parentheses for clarity, and passed NumPy array by `const&`.
+
 ## [1.1.0] - 2026-03-28
 
 ### Added

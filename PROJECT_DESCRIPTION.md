@@ -144,7 +144,7 @@ For particularly performance-critical image processing scenarios, the project in
 
 ## Testing Strategy
 
-The project includes **29 tests** covering all architectural layers, all passing without requiring external services:
+The project includes **tests** covering all architectural layers, all passing without requiring external services:
 
 | Layer | Tests | Strategy |
 |-------|-------|----------|
