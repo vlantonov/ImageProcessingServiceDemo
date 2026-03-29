@@ -36,6 +36,7 @@ class ProcessImageUseCase:
         image.mark_processing()
         await self._repository.save(image)
 
+        thumb_path: str | None = None
         try:
             raw_data = await self._storage.retrieve(image.original_path)
             result = await self._processor.generate_thumbnail(raw_data)
@@ -50,11 +51,16 @@ class ProcessImageUseCase:
                 channels=result.channels,
             )
             image.mark_completed(thumb_path, metadata)
+            await self._repository.save(image)
         except Exception:
             logger.exception("Failed to process image %s", image_id)
+            if thumb_path is not None:
+                try:
+                    await self._storage.delete(thumb_path)
+                except OSError:
+                    logger.warning("Failed to clean up thumbnail %s", thumb_path)
             image.mark_failed()
             await self._repository.save(image)
             raise
 
-        await self._repository.save(image)
         return True

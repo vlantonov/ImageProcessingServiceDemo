@@ -47,5 +47,11 @@ class CachedImageRepository(ImageRepository):
     async def get_expired(self, batch_size: int = 100) -> list[Image]:
         return await self._inner.get_expired(batch_size=batch_size)
 
+    async def delete_expired_batch(self, batch_size: int = 100) -> list[Image]:
+        deleted = await self._inner.delete_expired_batch(batch_size=batch_size)
+        for image in deleted:
+            self._cache.invalidate(image.id)
+        return deleted
+
     async def count(self, *, status: str | None = None) -> int:
         return await self._inner.count(status=status)

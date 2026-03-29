@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-29
+
+### Fixed
+
+- `ProcessPoolExecutor` in `PillowImageProcessor` is now shut down during app
+  lifespan teardown, preventing leaked worker processes on exit.
+- Race condition in retention sweeps: concurrent calls to `get_expired()` could
+  fetch the same rows, causing double-delete attempts on storage files. Added
+  `delete_expired_batch()` which uses `SELECT … FOR UPDATE SKIP LOCKED` to
+  atomically claim and delete expired rows in a single transaction.
+- `ProcessImageUseCase` now cleans up the stored thumbnail if the final
+  metadata save fails, preventing orphaned files and an image stuck in
+  `PROCESSING` state.
+- Narrowed overly broad `except Exception` handlers: `apply_retention.py` and
+  `process_image.py` now catch `OSError` for storage operations;
+  `pipeline.py` uses `asyncio.gather(return_exceptions=True)` instead of
+  swallowing exceptions inside coroutines.
+
 ## [1.2.0] - 2026-03-29
 
 ### Added
@@ -128,6 +146,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.1...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/releases/tag/v1.0.0

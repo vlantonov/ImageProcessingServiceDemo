@@ -98,6 +98,7 @@ class TestCachedImageRepository:
         repo.list_images = AsyncMock(return_value=[])
         repo.delete = AsyncMock(return_value=True)
         repo.get_expired = AsyncMock(return_value=[])
+        repo.delete_expired_batch = AsyncMock(return_value=[])
         repo.count = AsyncMock(return_value=0)
         return repo
 
@@ -164,6 +165,17 @@ class TestCachedImageRepository:
     async def test_get_expired_delegates(self, cached_repo, inner):
         await cached_repo.get_expired(batch_size=50)
         inner.get_expired.assert_awaited_once_with(batch_size=50)
+
+    async def test_delete_expired_batch_delegates_and_invalidates(self, cached_repo, inner, cache):
+        image = self._make_image()
+        cache.set(image)
+        inner.delete_expired_batch.return_value = [image]
+
+        result = await cached_repo.delete_expired_batch(batch_size=50)
+
+        assert result == [image]
+        inner.delete_expired_batch.assert_awaited_once_with(batch_size=50)
+        assert cache.get(image.id) is None
 
     async def test_count_delegates(self, cached_repo, inner):
         await cached_repo.count(status="completed")
