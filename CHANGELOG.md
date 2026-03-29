@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Health endpoint (`/health`) now reads version from `importlib.metadata` instead of
+  hardcoding `"1.0.0"`, and verifies database connectivity (`SELECT 1`) and storage
+  directory existence. Response includes a `checks` map with per-component status;
+  overall status reports `"degraded"` if any check fails.
 - `list_images()` and `get_expired()` now use server-side cursors
   (`session.stream_scalars`) instead of buffered `execute` + `all()`, reducing peak
   memory usage for large result sets.
