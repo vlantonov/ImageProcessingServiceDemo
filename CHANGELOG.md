@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- In-memory TTL cache for image metadata lookups (`get_by_id`), avoiding redundant
+  database hits on repeated reads. Implemented as a `CachedImageRepository` decorator
+  wrapping the existing `PostgresImageRepository`.
+- New `IMG_CACHE_TTL_SECONDS` (default 60) and `IMG_CACHE_MAX_SIZE` (default 1024)
+  configuration settings for cache tuning.
+
 ## [1.1.0] - 2026-03-28
 
 ### Added

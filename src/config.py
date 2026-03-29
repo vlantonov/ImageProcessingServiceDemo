@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     processing_max_workers: int = 4
     thumbnail_max_size: int = 256
 
+    # ── Cache ─────────────────────────────────────────────────────────
+    cache_ttl_seconds: int = 60
+    cache_max_size: int = 1024
+
     # ── Retention ────────────────────────────────────────────────────────
     retention_batch_size: int = 100
 
