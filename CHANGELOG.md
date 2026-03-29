@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-29
+
 ### Fixed
 
 - `ProcessPoolExecutor` in `PillowImageProcessor` is now shut down during app
@@ -144,6 +146,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.1...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/releases/tag/v1.0.0
