@@ -26,15 +26,17 @@ async def process_batch(
 
     async def _process_one(image_id: uuid.UUID) -> bool:
         async with semaphore:
-            try:
-                return await use_case.execute(image_id)
-            except Exception:
-                logger.exception("Pipeline error for image %s", image_id)
-                return False
+            return await use_case.execute(image_id)
 
-    results = await asyncio.gather(*[_process_one(iid) for iid in image_ids])
-    for ok in results:
-        if ok:
+    results = await asyncio.gather(
+        *[_process_one(iid) for iid in image_ids],
+        return_exceptions=True,
+    )
+    for result in results:
+        if isinstance(result, BaseException):
+            logger.error("Pipeline error: %s", result, exc_info=result)
+            failed += 1
+        elif result:
             success += 1
         else:
             failed += 1

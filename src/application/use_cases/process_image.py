@@ -57,7 +57,7 @@ class ProcessImageUseCase:
             if thumb_path is not None:
                 try:
                     await self._storage.delete(thumb_path)
-                except Exception:
+                except OSError:
                     logger.warning("Failed to clean up thumbnail %s", thumb_path)
             image.mark_failed()
             await self._repository.save(image)

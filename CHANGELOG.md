@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ProcessImageUseCase` now cleans up the stored thumbnail if the final
   metadata save fails, preventing orphaned files and an image stuck in
   `PROCESSING` state.
+- Narrowed overly broad `except Exception` handlers: `apply_retention.py` and
+  `process_image.py` now catch `OSError` for storage operations;
+  `pipeline.py` uses `asyncio.gather(return_exceptions=True)` instead of
+  swallowing exceptions inside coroutines.
 
 ## [1.2.0] - 2026-03-29
 

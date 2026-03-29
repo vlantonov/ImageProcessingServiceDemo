@@ -36,7 +36,7 @@ class ApplyRetentionUseCase:
                 await self._storage.delete(image.original_path)
                 if image.thumbnail_path:
                     await self._storage.delete(image.thumbnail_path)
-            except Exception:
+            except OSError:
                 logger.exception("Failed to clean up storage for expired image %s", image.id)
                 errors += 1
 
