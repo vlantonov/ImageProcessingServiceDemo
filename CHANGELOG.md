@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `ProcessPoolExecutor` in `PillowImageProcessor` is now shut down during app
+  lifespan teardown, preventing leaked worker processes on exit.
+
 ## [1.2.0] - 2026-03-29
 
 ### Added

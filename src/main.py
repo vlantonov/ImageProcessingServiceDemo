@@ -27,6 +27,9 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables ready")
     yield
+    from src.infrastructure.processing.pillow_processor import shutdown_executor
+
+    shutdown_executor()
     await engine.dispose()
 
 

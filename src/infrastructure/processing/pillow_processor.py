@@ -26,6 +26,14 @@ def get_executor(max_workers: int = 4) -> ProcessPoolExecutor:
     return _executor
 
 
+def shutdown_executor() -> None:
+    """Shut down the module-level executor, releasing worker processes."""
+    global _executor
+    if _executor is not None:
+        _executor.shutdown(wait=True)
+        _executor = None
+
+
 # ── Free functions executed in worker processes ──────────────────────────────
 
 
