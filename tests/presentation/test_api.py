@@ -24,6 +24,7 @@ from src.presentation.api.dependencies import (
     get_get_image_use_case,
     get_list_use_case,
     get_process_use_case,
+    get_settings,
     get_upload_use_case,
 )
 
@@ -60,8 +61,12 @@ def png_upload_bytes() -> bytes:
 
 
 @pytest.fixture
-def client(image_response) -> TestClient:
+def client(image_response, tmp_path) -> TestClient:
     from contextlib import asynccontextmanager
+    from unittest.mock import patch
+
+    from src.config import Settings
+    from src.presentation.schemas.image_schemas import ComponentCheck
 
     # Override lifespan to skip DB connection in tests
     @asynccontextmanager
@@ -90,7 +95,15 @@ def client(image_response) -> TestClient:
     app.dependency_overrides[get_list_use_case] = lambda: mock_list
     app.dependency_overrides[get_process_use_case] = lambda: mock_process
 
-    yield TestClient(app)
+    # Health endpoint: provide real tmp_path for storage and mock the DB check
+    test_settings = Settings(storage_base_dir=str(tmp_path))
+    app.dependency_overrides[get_settings] = lambda: test_settings
+
+    async def _ok_db_check():
+        return ComponentCheck(status="ok")
+
+    with patch("src.presentation.api.routes.health._check_database", side_effect=_ok_db_check):
+        yield TestClient(app)
 
     app.dependency_overrides.clear()
 
@@ -102,6 +115,9 @@ class TestHealthEndpoint:
         data = resp.json()
         assert data["status"] == "healthy"
         assert data["service"] == "image-processing-service"
+        assert data["version"]  # dynamic, just verify non-empty
+        assert data["checks"]["database"]["status"] == "ok"
+        assert data["checks"]["storage"]["status"] == "ok"
 
 
 class TestImageUpload:

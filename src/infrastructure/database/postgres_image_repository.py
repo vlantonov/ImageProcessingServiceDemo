@@ -40,8 +40,8 @@ class PostgresImageRepository(ImageRepository):
             if status:
                 stmt = stmt.where(ImageModel.status == status)
             stmt = stmt.offset(offset).limit(limit)
-            result = await session.execute(stmt)
-            return [_model_to_entity(row) for row in result.scalars().all()]
+            result = await session.stream_scalars(stmt)
+            return [_model_to_entity(row) async for row in result]
 
     async def delete(self, image_id: uuid.UUID) -> bool:
         async with self._session_factory() as session, session.begin():
@@ -58,8 +58,8 @@ class PostgresImageRepository(ImageRepository):
                 .where(ImageModel.expires_at <= now)
                 .limit(batch_size)
             )
-            result = await session.execute(stmt)
-            return [_model_to_entity(row) for row in result.scalars().all()]
+            result = await session.stream_scalars(stmt)
+            return [_model_to_entity(row) async for row in result]
 
     async def count(self, *, status: str | None = None) -> int:
         async with self._session_factory() as session:

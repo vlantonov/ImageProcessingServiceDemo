@@ -8,6 +8,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(pybind11 REQUIRED)
 
 pybind11_add_module(fast_resize fast_resize.cpp)
-target_compile_options(fast_resize PRIVATE -O3 -Wall -Wextra)
+target_compile_options(fast_resize PRIVATE -O3 -Wall -Wextra -march=native)
 
 install(TARGETS fast_resize DESTINATION .)

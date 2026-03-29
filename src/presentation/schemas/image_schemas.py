@@ -52,7 +52,13 @@ class RetentionResponse(BaseModel):
     errors: int
 
 
+class ComponentCheck(BaseModel):
+    status: str
+    detail: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
+    checks: dict[str, ComponentCheck] = Field(default_factory=dict)

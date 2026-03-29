@@ -98,7 +98,7 @@ src/
 cpp/                                   # Optional C++ resize module (pybind11)
 k8s/                                   # Kubernetes manifests (Deployment, HPA, PVC, …)
 minikube/                              # Local K8s demo scripts
-tests/                                 # 29 tests across all architecture layers
+tests/                                 # tests across all architecture layers
 ```
 
 ## Testing
@@ -107,5 +107,5 @@ tests/                                 # 29 tests across all architecture layers
 pytest tests/ -v
 ```
 
-All 29 tests pass without external services — domain tests are pure unit tests, application tests use mocked ports, infrastructure tests use real Pillow/filesystem I/O, and API tests use FastAPI `TestClient` with dependency overrides.
+All tests pass without external services — domain tests are pure unit tests, application tests use mocked ports, infrastructure tests use real Pillow/filesystem I/O, and API tests use FastAPI `TestClient` with dependency overrides.
 

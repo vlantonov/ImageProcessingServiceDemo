@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-29
+
+### Added
+
+- In-memory TTL cache for image metadata lookups (`get_by_id`), avoiding redundant
+  database hits on repeated reads. Implemented as a `CachedImageRepository` decorator
+  wrapping the existing `PostgresImageRepository`.
+- New `IMG_CACHE_TTL_SECONDS` (default 60) and `IMG_CACHE_MAX_SIZE` (default 1024)
+  configuration settings for cache tuning.
+
+### Changed
+
+- Health endpoint (`/health`) now reads version from `importlib.metadata` instead of
+  hardcoding `"1.0.0"`, and verifies database connectivity (`SELECT 1`) and storage
+  directory existence. Response includes a `checks` map with per-component status;
+  overall status reports `"degraded"` if any check fails.
+- `list_images()` and `get_expired()` now use server-side cursors
+  (`session.stream_scalars`) instead of buffered `execute` + `all()`, reducing peak
+  memory usage for large result sets.
+- C++ `bilinear_resize` uses SSE2 SIMD intrinsics on x86-64 to interpolate all
+  channels per pixel in parallel, with a scalar fallback for other architectures.
+  Arithmetic switched from `double` to `float` for better vectorization throughput.
+- C++ `bilinear_resize` now accepts and returns NumPy `uint8` arrays
+  (`py::array_t<uint8_t>`) instead of `std::vector<uint8_t>`, eliminating the
+  per-element copy between Python lists and C++ vectors. CMake builds with
+  `-march=native` to enable host-optimal SIMD.
+
+### Fixed
+
+- C++ `fast_resize.cpp` now passes `clang-tidy` with `bugprone-*`, `readability-*`,
+  `performance-*`, and `modernize-*` checks: renamed short identifiers, added explicit
+  `static_cast`, extracted magic numbers to constants, used uppercase float literal
+  suffixes, added parentheses for clarity, and passed NumPy array by `const&`.
+
 ## [1.1.0] - 2026-03-28
 
 ### Added

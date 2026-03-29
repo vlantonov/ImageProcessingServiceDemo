@@ -14,6 +14,8 @@ from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
 from src.config import Settings
+from src.infrastructure.cache.cached_image_repository import CachedImageRepository
+from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
 from src.infrastructure.database.postgres_image_repository import PostgresImageRepository
 from src.infrastructure.database.session import build_engine, build_session_factory
 from src.infrastructure.processing.pillow_processor import PillowImageProcessor
@@ -33,8 +35,20 @@ def _session_factory():
 
 
 @lru_cache
-def _repository() -> PostgresImageRepository:
-    return PostgresImageRepository(_session_factory())
+def _cache() -> InMemoryImageCache:
+    settings = get_settings()
+    return InMemoryImageCache(
+        ttl_seconds=settings.cache_ttl_seconds,
+        max_size=settings.cache_max_size,
+    )
+
+
+@lru_cache
+def _repository() -> CachedImageRepository:
+    return CachedImageRepository(
+        inner=PostgresImageRepository(_session_factory()),
+        cache=_cache(),
+    )
 
 
 @lru_cache
