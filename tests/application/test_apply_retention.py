@@ -21,7 +21,7 @@ async def test_retention_deletes_expired(mock_repository, mock_storage):
         status=ProcessingStatus.COMPLETED,
         expires_at=datetime.now(UTC) - timedelta(hours=1),
     )
-    mock_repository.get_expired.return_value = [expired_img]
+    mock_repository.delete_expired_batch.return_value = [expired_img]
 
     uc = ApplyRetentionUseCase(mock_repository, mock_storage)
     result = await uc.execute(batch_size=10)
@@ -30,12 +30,12 @@ async def test_retention_deletes_expired(mock_repository, mock_storage):
     assert result.errors == 0
     mock_storage.delete.assert_any_await("/data/old.png")
     mock_storage.delete.assert_any_await("/data/thumb_old.png")
-    mock_repository.delete.assert_awaited_once_with(expired_img.id)
+    mock_repository.delete_expired_batch.assert_awaited_once_with(batch_size=10)
 
 
 @pytest.mark.asyncio
 async def test_retention_no_expired(mock_repository, mock_storage):
-    mock_repository.get_expired.return_value = []
+    mock_repository.delete_expired_batch.return_value = []
 
     uc = ApplyRetentionUseCase(mock_repository, mock_storage)
     result = await uc.execute()

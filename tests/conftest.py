@@ -61,6 +61,7 @@ def mock_repository() -> ImageRepository:
     repo.list_images = AsyncMock(return_value=[])
     repo.delete = AsyncMock(return_value=True)
     repo.get_expired = AsyncMock(return_value=[])
+    repo.delete_expired_batch = AsyncMock(return_value=[])
     repo.count = AsyncMock(return_value=0)
     return repo
 

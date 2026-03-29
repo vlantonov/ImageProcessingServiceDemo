@@ -61,6 +61,25 @@ class PostgresImageRepository(ImageRepository):
             result = await session.stream_scalars(stmt)
             return [_model_to_entity(row) async for row in result]
 
+    async def delete_expired_batch(self, batch_size: int = 100) -> list[Image]:
+        now = datetime.now(UTC)
+        async with self._session_factory() as session, session.begin():
+            stmt = (
+                select(ImageModel)
+                .where(ImageModel.expires_at.isnot(None))
+                .where(ImageModel.expires_at <= now)
+                .limit(batch_size)
+                .with_for_update(skip_locked=True)
+            )
+            result = await session.stream_scalars(stmt)
+            models = [row async for row in result]
+            entities = [_model_to_entity(m) for m in models]
+            if models:
+                ids = [m.id for m in models]
+                del_stmt = delete(ImageModel).where(ImageModel.id.in_(ids))
+                await session.execute(del_stmt)
+            return entities
+
     async def count(self, *, status: str | None = None) -> int:
         async with self._session_factory() as session:
             stmt = select(func.count()).select_from(ImageModel)

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `ProcessPoolExecutor` in `PillowImageProcessor` is now shut down during app
   lifespan teardown, preventing leaked worker processes on exit.
+- Race condition in retention sweeps: concurrent calls to `get_expired()` could
+  fetch the same rows, causing double-delete attempts on storage files. Added
+  `delete_expired_batch()` which uses `SELECT … FOR UPDATE SKIP LOCKED` to
+  atomically claim and delete expired rows in a single transaction.
 
 ## [1.2.0] - 2026-03-29
 

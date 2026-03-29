@@ -29,4 +29,14 @@ class ImageRepository(ABC):
     async def get_expired(self, batch_size: int = 100) -> list[Image]: ...
 
     @abstractmethod
+    async def delete_expired_batch(self, batch_size: int = 100) -> list[Image]:
+        """Atomically select and delete expired images.
+
+        Uses row-level locking so concurrent sweeps never process the
+        same rows.  Returns the deleted entities (caller should clean
+        up storage files afterward).
+        """
+        ...
+
+    @abstractmethod
     async def count(self, *, status: str | None = None) -> int: ...

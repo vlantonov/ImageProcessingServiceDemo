@@ -26,20 +26,19 @@ class ApplyRetentionUseCase:
         self._storage = storage
 
     async def execute(self, batch_size: int = 100) -> RetentionResult:
-        expired = await self._repository.get_expired(batch_size=batch_size)
-        deleted = 0
+        deleted_images = await self._repository.delete_expired_batch(
+            batch_size=batch_size,
+        )
         errors = 0
 
-        for image in expired:
+        for image in deleted_images:
             try:
                 await self._storage.delete(image.original_path)
                 if image.thumbnail_path:
                     await self._storage.delete(image.thumbnail_path)
-                await self._repository.delete(image.id)
-                deleted += 1
             except Exception:
-                logger.exception("Failed to delete expired image %s", image.id)
+                logger.exception("Failed to clean up storage for expired image %s", image.id)
                 errors += 1
 
-        logger.info("Retention sweep: deleted=%d errors=%d", deleted, errors)
-        return RetentionResult(deleted_count=deleted, errors=errors)
+        logger.info("Retention sweep: deleted=%d errors=%d", len(deleted_images), errors)
+        return RetentionResult(deleted_count=len(deleted_images), errors=errors)
