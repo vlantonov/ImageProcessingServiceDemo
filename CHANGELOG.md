@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `list_images()` and `get_expired()` now use server-side cursors
   (`session.stream_scalars`) instead of buffered `execute` + `all()`, reducing peak
   memory usage for large result sets.
+- C++ `bilinear_resize` uses SSE2 SIMD intrinsics on x86-64 to interpolate all
+  channels per pixel in parallel, with a scalar fallback for other architectures.
+  Arithmetic switched from `double` to `float` for better vectorization throughput.
+- C++ `bilinear_resize` now accepts and returns NumPy `uint8` arrays
+  (`py::array_t<uint8_t>`) instead of `std::vector<uint8_t>`, eliminating the
+  per-element copy between Python lists and C++ vectors. CMake builds with
+  `-march=native` to enable host-optimal SIMD.
 
 ## [1.1.0] - 2026-03-28
 
