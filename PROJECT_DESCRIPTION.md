@@ -83,8 +83,9 @@ Fast, reliable REST APIs are designed and developed with **FastAPI**:
 | `POST` | `/api/v1/retention/sweep` | Trigger retention cleanup |
 
 **API quality features:**
+- **API key authentication** on all `/api/v1/` endpoints via `X-API-Key` header (configurable, timing-safe comparison). Health endpoint stays open for Kubernetes probes.
 - Pydantic schemas with strict validation (max 20 tags, TTL range enforcement, max upload size)
-- Proper HTTP status codes (201 Created, 404 Not Found, 413 Payload Too Large, 415 Unsupported Media Type)
+- Proper HTTP status codes (201 Created, 401 Unauthorized, 404 Not Found, 413 Payload Too Large, 415 Unsupported Media Type)
 - Content-type enforcement for upload security
 - Automatic OpenAPI/Swagger documentation at `/docs` and ReDoc at `/redoc`
 - Request logging middleware tracking method, path, status, and response time
@@ -128,6 +129,7 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 | `IMG_PROCESSING_MAX_WORKERS` | `4` | ProcessPoolExecutor worker count |
 | `IMG_THUMBNAIL_MAX_SIZE` | `256` | Thumbnail max dimension (pixels) |
 | `IMG_RETENTION_BATCH_SIZE` | `100` | Expired images per retention sweep |
+| `IMG_API_KEY` | *(empty)* | API key for `X-API-Key` header auth (empty = disabled) |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 
 ---

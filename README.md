@@ -58,6 +58,9 @@ cd cpp && ./build.sh
 
 ## API Endpoints
 
+All `/api/v1/` endpoints require an `X-API-Key` header when `IMG_API_KEY` is set.
+The `/health` endpoint remains open for Kubernetes probes.
+
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness/readiness probe |
@@ -82,6 +85,7 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_PROCESSING_MAX_WORKERS` | `4` | ProcessPoolExecutor workers |
 | `IMG_THUMBNAIL_MAX_SIZE` | `256` | Thumbnail max dimension (px) |
 | `IMG_RETENTION_BATCH_SIZE` | `100` | Expired images per sweep |
+| `IMG_API_KEY` | *(empty)* | API key for `X-API-Key` header auth (empty = disabled) |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 
 ## Project Structure
