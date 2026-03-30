@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 from contextlib import asynccontextmanager
 
@@ -37,7 +38,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Image Processing Service",
         description="High-performance image processing microservice — Clean Architecture demo",
-        version="1.0.0",
+        version=importlib.metadata.version("image-processing-service"),
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
