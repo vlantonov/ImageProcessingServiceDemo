@@ -11,6 +11,7 @@ from src.application.use_cases.get_image import GetImageUseCase
 from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
+from src.infrastructure.processing.image_validator import InvalidImageError, validate_image_bytes
 from src.infrastructure.processing.pipeline import process_batch
 from src.presentation.api.dependencies import (
     get_get_image_use_case,
@@ -57,6 +58,13 @@ async def upload_image(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File exceeds 50 MB limit",
         )
+    try:
+        validate_image_bytes(data)
+    except InvalidImageError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Image validation failed: {exc}",
+        ) from exc
     result = await use_case.execute(
         filename=file.filename or "unnamed",
         data=data,

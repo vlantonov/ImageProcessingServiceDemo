@@ -12,8 +12,12 @@ import io
 from concurrent.futures import ProcessPoolExecutor
 
 from PIL import Image as PILImage
+from PIL import ImageFile
 
 from src.domain.interfaces.image_processor import ImageProcessor, ProcessingResult
+
+# Security: never load truncated/corrupt images — prevents CVE exploitation.
+ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 # Module-level executor shared across requests.
 _executor: ProcessPoolExecutor | None = None

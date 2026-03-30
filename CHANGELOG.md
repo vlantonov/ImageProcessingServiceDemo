@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Added image validation on upload: uploaded bytes are verified with Pillow's
+  `verify()` and `load()` to reject corrupt, truncated, or malicious files
+  before they reach storage or processing. Decompression bombs are blocked via
+  a 100-megapixel limit, and only JPEG/PNG/WEBP/TIFF formats are accepted.
+- Explicitly set `ImageFile.LOAD_TRUNCATED_IMAGES = False` in the Pillow
+  processor to prevent partial parsing of corrupt images that could trigger
+  Pillow CVEs.
+
 ## [1.2.1] - 2026-03-29
 
 ### Fixed
