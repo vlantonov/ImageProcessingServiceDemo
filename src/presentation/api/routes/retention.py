@@ -8,10 +8,14 @@ from fastapi import APIRouter, Depends
 
 from src.application.use_cases.apply_retention import ApplyRetentionUseCase
 from src.config import Settings
-from src.presentation.api.dependencies import get_retention_use_case, get_settings
+from src.presentation.api.dependencies import get_retention_use_case, get_settings, require_api_key
 from src.presentation.schemas.image_schemas import RetentionResponse
 
-router = APIRouter(prefix="/api/v1/retention", tags=["retention"])
+router = APIRouter(
+    prefix="/api/v1/retention",
+    tags=["retention"],
+    dependencies=[Depends(require_api_key)],
+)
 
 
 @router.post("/sweep", response_model=RetentionResponse)

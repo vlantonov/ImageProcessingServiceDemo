@@ -6,7 +6,12 @@ completely decoupled from infrastructure (Dependency Inversion Principle).
 
 from __future__ import annotations
 
+import secrets
 from functools import lru_cache
+from typing import Annotated
+
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
 
 from src.application.use_cases.apply_retention import ApplyRetentionUseCase
 from src.application.use_cases.get_image import GetImageUseCase
@@ -25,6 +30,27 @@ from src.infrastructure.storage.local_image_storage import LocalImageStorage
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def require_api_key(
+    api_key: Annotated[str | None, Security(_api_key_header)] = None,
+    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
+) -> None:
+    """Validate the X-API-Key header against the configured key.
+
+    If IMG_API_KEY is not set (empty string), authentication is disabled.
+    """
+    configured_key = settings.api_key
+    if not configured_key:
+        return
+    if api_key is None or not secrets.compare_digest(api_key, configured_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key",
+        )
 
 
 @lru_cache

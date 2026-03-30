@@ -18,6 +18,7 @@ from src.presentation.api.dependencies import (
     get_list_use_case,
     get_process_use_case,
     get_upload_use_case,
+    require_api_key,
 )
 from src.presentation.sanitize import sanitize_filename
 from src.presentation.schemas.image_schemas import (
@@ -27,7 +28,9 @@ from src.presentation.schemas.image_schemas import (
     ImageOut,
 )
 
-router = APIRouter(prefix="/api/v1/images", tags=["images"])
+router = APIRouter(
+    prefix="/api/v1/images", tags=["images"], dependencies=[Depends(require_api_key)]
+)
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/tiff"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB

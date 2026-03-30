@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Added API key authentication for all image and retention endpoints. Set the
+  `IMG_API_KEY` environment variable to enforce authentication via the
+  `X-API-Key` header. Health endpoints remain open for Kubernetes probes.
+  Uses `secrets.compare_digest` for timing-safe key comparison.
+
 ## [1.2.2] - 2026-03-30
 
 ### Security

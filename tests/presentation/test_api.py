@@ -166,3 +166,87 @@ class TestImageGet:
         resp = client.get(f"/api/v1/images/{image_id}/download")
         assert resp.status_code == 200
         assert resp.content == b"file-bytes"
+
+
+# ── Authentication tests ─────────────────────────────────────────────────
+
+
+@pytest.fixture
+def auth_client(image_response, tmp_path) -> TestClient:
+    """Client configured with API key authentication enabled."""
+    from contextlib import asynccontextmanager
+    from unittest.mock import patch
+
+    from src.config import Settings
+    from src.presentation.schemas.image_schemas import ComponentCheck
+
+    @asynccontextmanager
+    async def _noop_lifespan(app):
+        yield
+
+    app.router.lifespan_context = _noop_lifespan
+
+    mock_upload = AsyncMock(spec=UploadImageUseCase)
+    mock_upload.execute = AsyncMock(return_value=image_response)
+
+    mock_get = AsyncMock(spec=GetImageUseCase)
+    mock_get.execute = AsyncMock(return_value=image_response)
+    mock_get.get_file = AsyncMock(return_value=b"file-bytes")
+
+    mock_list = AsyncMock(spec=ListImagesUseCase)
+    mock_list.execute = AsyncMock(
+        return_value=ImageListResponse(images=[image_response], total=1, offset=0, limit=50)
+    )
+
+    mock_process = AsyncMock(spec=ProcessImageUseCase)
+    mock_process.execute = AsyncMock(return_value=True)
+
+    app.dependency_overrides[get_upload_use_case] = lambda: mock_upload
+    app.dependency_overrides[get_get_image_use_case] = lambda: mock_get
+    app.dependency_overrides[get_list_use_case] = lambda: mock_list
+    app.dependency_overrides[get_process_use_case] = lambda: mock_process
+
+    test_settings = Settings(storage_base_dir=str(tmp_path), api_key="test-secret-key")
+    app.dependency_overrides[get_settings] = lambda: test_settings
+
+    async def _ok_db_check():
+        return ComponentCheck(status="ok")
+
+    with patch("src.presentation.api.routes.health._check_database", side_effect=_ok_db_check):
+        yield TestClient(app)
+
+    app.dependency_overrides.clear()
+
+
+class TestApiKeyAuth:
+    def test_missing_key_returns_401(self, auth_client):
+        resp = auth_client.get("/api/v1/images/")
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "Invalid or missing API key"
+
+    def test_wrong_key_returns_401(self, auth_client):
+        resp = auth_client.get("/api/v1/images/", headers={"X-API-Key": "wrong-key"})
+        assert resp.status_code == 401
+
+    def test_correct_key_allows_access(self, auth_client):
+        resp = auth_client.get("/api/v1/images/", headers={"X-API-Key": "test-secret-key"})
+        assert resp.status_code == 200
+
+    def test_health_endpoint_open_without_key(self, auth_client):
+        resp = auth_client.get("/health")
+        assert resp.status_code == 200
+
+    def test_upload_requires_key(self, auth_client, png_upload_bytes):
+        resp = auth_client.post(
+            "/api/v1/images/",
+            files={"file": ("test.png", png_upload_bytes, "image/png")},
+        )
+        assert resp.status_code == 401
+
+    def test_upload_with_key_succeeds(self, auth_client, png_upload_bytes):
+        resp = auth_client.post(
+            "/api/v1/images/",
+            files={"file": ("test.png", png_upload_bytes, "image/png")},
+            headers={"X-API-Key": "test-secret-key"},
+        )
+        assert resp.status_code == 201

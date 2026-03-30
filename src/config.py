@@ -29,4 +29,7 @@ class Settings(BaseSettings):
     # ── Retention ────────────────────────────────────────────────────────
     retention_batch_size: int = 100
 
+    # ── Authentication ───────────────────────────────────────────────────
+    api_key: str = ""
+
     model_config = {"env_prefix": "IMG_"}
