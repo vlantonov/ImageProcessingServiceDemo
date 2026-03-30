@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-03-30
+
+### Security
+
+- Added image validation on upload: uploaded bytes are verified with Pillow's
+  `verify()` and `load()` to reject corrupt, truncated, or malicious files
+  before they reach storage or processing. Decompression bombs are blocked via
+  a 100-megapixel limit, and only JPEG/PNG/WEBP/TIFF formats are accepted.
+- Explicitly set `ImageFile.LOAD_TRUNCATED_IMAGES = False` in the Pillow
+  processor to prevent partial parsing of corrupt images that could trigger
+  Pillow CVEs.
+- Added filename sanitization on upload to prevent path-traversal attacks
+  (`../../../etc/passwd`), null-byte injection, and hidden-file creation.
+  `LocalImageStorage.store()` also validates the resolved path stays inside
+  the base directory as defence-in-depth.
+
 ## [1.2.1] - 2026-03-29
 
 ### Fixed
@@ -146,7 +162,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.1...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.0.1...v1.1.0
