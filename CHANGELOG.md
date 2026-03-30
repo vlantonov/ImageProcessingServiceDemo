@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Explicitly set `ImageFile.LOAD_TRUNCATED_IMAGES = False` in the Pillow
   processor to prevent partial parsing of corrupt images that could trigger
   Pillow CVEs.
+- Added filename sanitization on upload to prevent path-traversal attacks
+  (`../../../etc/passwd`), null-byte injection, and hidden-file creation.
+  `LocalImageStorage.store()` also validates the resolved path stays inside
+  the base directory as defence-in-depth.
 
 ## [1.2.1] - 2026-03-29
 

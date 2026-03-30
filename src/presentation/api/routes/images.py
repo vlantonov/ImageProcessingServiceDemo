@@ -19,6 +19,7 @@ from src.presentation.api.dependencies import (
     get_process_use_case,
     get_upload_use_case,
 )
+from src.presentation.sanitize import sanitize_filename
 from src.presentation.schemas.image_schemas import (
     BatchProcessRequest,
     BatchProcessResponse,
@@ -65,8 +66,9 @@ async def upload_image(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Image validation failed: {exc}",
         ) from exc
+    safe_filename = sanitize_filename(file.filename or "unnamed")
     result = await use_case.execute(
-        filename=file.filename or "unnamed",
+        filename=safe_filename,
         data=data,
         tags=tags,
         ttl_hours=ttl_hours,

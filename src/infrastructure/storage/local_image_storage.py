@@ -21,8 +21,13 @@ class LocalImageStorage(ImageStorage):
 
     async def store(self, filename: str, data: bytes) -> str:
         content_hash = hashlib.sha256(data).hexdigest()[:12]
-        safe_name = f"{content_hash}_{filename}"
-        dest = self._base / safe_name
+        # Use only the basename to strip any residual path components.
+        basename = Path(filename).name or "unnamed"
+        safe_name = f"{content_hash}_{basename}"
+        dest = (self._base / safe_name).resolve()
+        # Defence-in-depth: ensure the resolved path stays inside the base dir.
+        if not str(dest).startswith(str(self._base.resolve())):
+            raise ValueError("Path traversal detected in filename")
         await asyncio.to_thread(dest.write_bytes, data)
         return str(dest)
 
