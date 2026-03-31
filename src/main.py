@@ -12,8 +12,9 @@ from src.infrastructure.database.models import Base
 from src.presentation.api.dependencies import get_settings
 from src.presentation.api.middleware import RequestLoggingMiddleware
 from src.presentation.api.routes import health, images, retention
+from src.presentation.logging_config import configure_logging
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+configure_logging(json_output=False)
 logger = logging.getLogger(__name__)
 
 
