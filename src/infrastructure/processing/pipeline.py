@@ -23,6 +23,7 @@ async def process_batch(
     semaphore = asyncio.Semaphore(concurrency)
     success = 0
     failed = 0
+    logger.info("Batch processing started: count=%d concurrency=%d", len(image_ids), concurrency)
 
     async def _process_one(image_id: uuid.UUID) -> bool:
         async with semaphore:
@@ -41,4 +42,5 @@ async def process_batch(
         else:
             failed += 1
 
+    logger.info("Batch processing completed: success=%d failed=%d", success, failed)
     return {"success": success, "failed": failed}

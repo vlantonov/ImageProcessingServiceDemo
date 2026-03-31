@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import os
 from pathlib import Path
 
 from src.domain.interfaces.image_storage import ImageStorage
+
+logger = logging.getLogger(__name__)
 
 
 class LocalImageStorage(ImageStorage):
@@ -29,14 +32,19 @@ class LocalImageStorage(ImageStorage):
         if not str(dest).startswith(str(self._base.resolve())):
             raise ValueError("Path traversal detected in filename")
         await asyncio.to_thread(dest.write_bytes, data)
+        logger.debug("Stored file: %s (%d bytes)", dest, len(data))
         return str(dest)
 
     async def retrieve(self, path: str) -> bytes:
-        return await asyncio.to_thread(Path(path).read_bytes)
+        data = await asyncio.to_thread(Path(path).read_bytes)
+        logger.debug("Retrieved file: %s (%d bytes)", path, len(data))
+        return data
 
     async def delete(self, path: str) -> bool:
         try:
             await asyncio.to_thread(os.remove, path)
+            logger.debug("Deleted file: %s", path)
             return True
         except FileNotFoundError:
+            logger.debug("Delete skipped, file not found: %s", path)
             return False

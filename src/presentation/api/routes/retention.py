@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -16,6 +17,8 @@ from src.presentation.api.dependencies import (
 )
 from src.presentation.schemas.image_schemas import RetentionResponse
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/api/v1/retention",
     tags=["retention"],
@@ -29,5 +32,6 @@ async def trigger_retention_sweep(
     settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
     _rate: Annotated[None, Depends(process_rate_limiter())] = None,
 ):
+    logger.info("Retention sweep triggered, batch_size=%d", settings.retention_batch_size)
     result = await use_case.execute(batch_size=settings.retention_batch_size)
     return RetentionResponse(deleted_count=result.deleted_count, errors=result.errors)

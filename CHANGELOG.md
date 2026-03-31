@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-31
+
+### Added
+
+- Structured logging with correlation IDs for distributed tracing. Every request
+  is assigned a unique correlation ID (or accepts one via `X-Correlation-ID` header),
+  which is propagated through all log records and returned in the response header.
+- `CorrelationIdFilter` logging filter that injects `correlation_id` into every log record.
+- `JSONFormatter` for machine-readable JSON log output (opt-in via `configure_logging(json_output=True)`).
+- `configure_logging()` helper replacing `logging.basicConfig()` with correlation-aware formatting.
+- Targeted logging across all layers: upload/rejection/404 in routes, image
+  lifecycle in use cases, batch start/complete in pipeline, file I/O in storage
+  (DEBUG), and cache hit/miss in repository (DEBUG).
+
+### Fixed
+
+- Replaced bare `except Exception:` with `except Exception as e:` in
+  `ProcessImageUseCase` to ensure the exception is captured in log output.
+
 ## [1.2.4] - 2026-03-31
 
 ### Security

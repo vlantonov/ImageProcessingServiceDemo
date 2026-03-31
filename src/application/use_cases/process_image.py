@@ -31,8 +31,10 @@ class ProcessImageUseCase:
     async def execute(self, image_id: uuid.UUID) -> bool:
         image = await self._repository.get_by_id(image_id)
         if image is None:
+            logger.warning("Process requested for non-existent image: %s", image_id)
             return False
 
+        logger.info("Processing started: image=%s filename=%s", image_id, image.filename)
         image.mark_processing()
         await self._repository.save(image)
 
@@ -52,8 +54,15 @@ class ProcessImageUseCase:
             )
             image.mark_completed(thumb_path, metadata)
             await self._repository.save(image)
-        except Exception:
-            logger.exception("Failed to process image %s", image_id)
+            logger.info(
+                "Processing completed: image=%s width=%d height=%d format=%s",
+                image_id,
+                result.width,
+                result.height,
+                result.format,
+            )
+        except Exception as e:
+            logger.exception("Failed to process image %s: %s", image_id, e)
             if thumb_path is not None:
                 try:
                     await self._storage.delete(thumb_path)
