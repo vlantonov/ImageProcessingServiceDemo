@@ -29,6 +29,14 @@ class Settings(BaseSettings):
     # ── Retention ────────────────────────────────────────────────────────
     retention_batch_size: int = 100
 
+    # ── Rate Limiting ────────────────────────────────────────────────────
+    rate_limit_upload_max: int = 10
+    rate_limit_upload_window: int = 60
+    rate_limit_process_max: int = 20
+    rate_limit_process_window: int = 60
+    rate_limit_read_max: int = 60
+    rate_limit_read_window: int = 60
+
     # ── Authentication ───────────────────────────────────────────────────
     api_key: str = ""
 

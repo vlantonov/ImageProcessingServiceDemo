@@ -60,6 +60,7 @@ cd cpp && ./build.sh
 
 All `/api/v1/` endpoints require an `X-API-Key` header when `IMG_API_KEY` is set.
 The `/health` endpoint remains open for Kubernetes probes.
+Upload, processing, and read endpoints are rate-limited per client IP (HTTP 429 when exceeded).
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -86,6 +87,12 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_THUMBNAIL_MAX_SIZE` | `256` | Thumbnail max dimension (px) |
 | `IMG_RETENTION_BATCH_SIZE` | `100` | Expired images per sweep |
 | `IMG_API_KEY` | *(empty)* | API key for `X-API-Key` header auth (empty = disabled) |
+| `IMG_RATE_LIMIT_UPLOAD_MAX` | `10` | Max upload requests per window per IP |
+| `IMG_RATE_LIMIT_UPLOAD_WINDOW` | `60` | Upload rate limit window (seconds) |
+| `IMG_RATE_LIMIT_PROCESS_MAX` | `20` | Max process requests per window per IP |
+| `IMG_RATE_LIMIT_PROCESS_WINDOW` | `60` | Process rate limit window (seconds) |
+| `IMG_RATE_LIMIT_READ_MAX` | `60` | Max read requests per window per IP |
+| `IMG_RATE_LIMIT_READ_WINDOW` | `60` | Read rate limit window (seconds) |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 
 ## Project Structure
