@@ -10,7 +10,7 @@ import secrets
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader
 
 from src.application.use_cases.apply_retention import ApplyRetentionUseCase
@@ -88,22 +88,43 @@ def _processor() -> PillowImageProcessor:
     return PillowImageProcessor(max_workers=get_settings().processing_max_workers)
 
 
-@lru_cache
-def upload_rate_limiter() -> RateLimiter:
-    settings = get_settings()
-    return RateLimiter(settings.rate_limit_upload_max, settings.rate_limit_upload_window)
+_rate_limiters: dict[str, RateLimiter] = {}
 
 
-@lru_cache
-def process_rate_limiter() -> RateLimiter:
-    settings = get_settings()
-    return RateLimiter(settings.rate_limit_process_max, settings.rate_limit_process_window)
+def _get_rate_limiter(name: str, max_requests: int, window_seconds: int) -> RateLimiter:
+    if name not in _rate_limiters:
+        _rate_limiters[name] = RateLimiter(max_requests, window_seconds)
+    return _rate_limiters[name]
 
 
-@lru_cache
-def read_rate_limiter() -> RateLimiter:
-    settings = get_settings()
-    return RateLimiter(settings.rate_limit_read_max, settings.rate_limit_read_window)
+async def upload_rate_limiter(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
+) -> None:
+    limiter = _get_rate_limiter(
+        "upload", settings.rate_limit_upload_max, settings.rate_limit_upload_window
+    )
+    await limiter(request)
+
+
+async def process_rate_limiter(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
+) -> None:
+    limiter = _get_rate_limiter(
+        "process", settings.rate_limit_process_max, settings.rate_limit_process_window
+    )
+    await limiter(request)
+
+
+async def read_rate_limiter(
+    request: Request,
+    settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
+) -> None:
+    limiter = _get_rate_limiter(
+        "read", settings.rate_limit_read_max, settings.rate_limit_read_window
+    )
+    await limiter(request)
 
 
 def get_upload_use_case() -> UploadImageUseCase:
