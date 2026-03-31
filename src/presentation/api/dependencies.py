@@ -30,7 +30,7 @@ from src.presentation.api.rate_limit import RateLimiter
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore[call-arg]  # pydantic-settings reads from env
 
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
