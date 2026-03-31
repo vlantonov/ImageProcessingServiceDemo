@@ -17,7 +17,9 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 COPY --from=builder /install /usr/local
+COPY pyproject.toml .
 COPY src/ src/
+RUN pip install --no-cache-dir --no-deps .
 
 RUN mkdir -p /data/images && chown -R appuser:appuser /data
 

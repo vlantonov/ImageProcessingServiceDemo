@@ -57,6 +57,7 @@ fi
 info "Applying Kubernetes manifests..."
 kubectl apply -f "$SCRIPT_DIR/00-namespace.yaml"
 kubectl apply -f "$SCRIPT_DIR/01-configmap.yaml"
+kubectl apply -f "$SCRIPT_DIR/01a-secret.yaml"
 kubectl apply -f "$SCRIPT_DIR/02-postgres.yaml"
 kubectl apply -f "$SCRIPT_DIR/03-pvc.yaml"
 kubectl apply -f "$SCRIPT_DIR/04-deployment.yaml"
