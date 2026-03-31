@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote_plus
+
+from pydantic import computed_field
 from pydantic_settings import BaseSettings
 
 
@@ -11,9 +14,24 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # ── Database ─────────────────────────────────────────────────────────
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/images"
+    # Credentials MUST be supplied via environment variables or a secrets
+    # manager; no defaults are provided to prevent accidental leakage.
+    db_user: str  # required — no default
+    db_password: str  # required — no default
+    db_host: str = "localhost"
+    db_port: int = 5432
+    db_name: str = "images"
     db_pool_size: int = 10
     db_max_overflow: int = 20
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_url(self) -> str:
+        password = quote_plus(self.db_password)
+        return (
+            f"postgresql+asyncpg://{self.db_user}:{password}"
+            f"@{self.db_host}:{self.db_port}/{self.db_name}"
+        )
 
     # ── Storage ──────────────────────────────────────────────────────────
     storage_base_dir: str = "/data/images"

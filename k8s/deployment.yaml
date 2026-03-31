@@ -24,6 +24,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: image-service-config
+            - secretRef:
+                name: image-service-db-credentials
           resources:
             requests:
               cpu: "250m"
