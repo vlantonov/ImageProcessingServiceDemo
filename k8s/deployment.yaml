@@ -15,9 +15,16 @@ spec:
       labels:
         app: image-service
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
       containers:
         - name: image-service
           image: registry.example.com/cv-team/image-service:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -48,7 +55,11 @@ spec:
           volumeMounts:
             - name: image-data
               mountPath: /data/images
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: image-data
           persistentVolumeClaim:
             claimName: image-data-pvc
+        - name: tmp
+          emptyDir: {}

@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `IMG_DB_NAME` variables. Kubernetes manifests use `Secret` resources
   instead of storing credentials in ConfigMaps. Docker Compose reads
   credentials from the host environment (see `.env.example`).
+- Added Kubernetes `SecurityContext` to all deployments: `runAsNonRoot: true`,
+  `allowPrivilegeEscalation: false`, and `readOnlyRootFilesystem: true`.
+  Writable paths (`/data/images`, `/tmp`, PostgreSQL's `/var/run/postgresql`)
+  use `emptyDir` or PVC mounts.
 
 ### Changed
 
