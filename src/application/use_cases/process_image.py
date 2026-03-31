@@ -52,8 +52,8 @@ class ProcessImageUseCase:
             )
             image.mark_completed(thumb_path, metadata)
             await self._repository.save(image)
-        except Exception:
-            logger.exception("Failed to process image %s", image_id)
+        except Exception as e:
+            logger.exception("Failed to process image %s: %s", image_id, e)
             if thumb_path is not None:
                 try:
                     await self._storage.delete(thumb_path)
