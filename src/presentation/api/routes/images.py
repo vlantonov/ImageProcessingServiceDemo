@@ -18,7 +18,10 @@ from src.presentation.api.dependencies import (
     get_list_use_case,
     get_process_use_case,
     get_upload_use_case,
+    process_rate_limiter,
+    read_rate_limiter,
     require_api_key,
+    upload_rate_limiter,
 )
 from src.presentation.sanitize import sanitize_filename
 from src.presentation.schemas.image_schemas import (
@@ -43,6 +46,7 @@ async def upload_image(
     tags: Annotated[list[str] | None, Query()] = None,
     ttl_hours: Annotated[int | None, Query(ge=1, le=8760)] = None,
     use_case: Annotated[UploadImageUseCase, Depends(get_upload_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(upload_rate_limiter())] = None,
 ):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -85,6 +89,7 @@ async def list_images(
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     status_filter: Annotated[str | None, Query(alias="status")] = None,
     use_case: Annotated[ListImagesUseCase, Depends(get_list_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(read_rate_limiter())] = None,
 ):
     return await use_case.execute(offset=offset, limit=limit, status=status_filter)
 
@@ -93,6 +98,7 @@ async def list_images(
 async def get_image(
     image_id: uuid.UUID,
     use_case: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(read_rate_limiter())] = None,
 ):
     result = await use_case.execute(image_id)
     if result is None:
@@ -105,6 +111,7 @@ async def download_image(
     image_id: uuid.UUID,
     thumbnail: bool = False,
     use_case: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(read_rate_limiter())] = None,
 ):
     data = await use_case.get_file(image_id, thumbnail=thumbnail)
     if data is None:
@@ -116,6 +123,7 @@ async def download_image(
 async def process_batch_images(
     body: BatchProcessRequest,
     use_case: Annotated[ProcessImageUseCase, Depends(get_process_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(process_rate_limiter())] = None,
 ):
     result = await process_batch(use_case, body.image_ids, concurrency=body.concurrency)
     return result
@@ -126,6 +134,7 @@ async def process_single_image(
     image_id: uuid.UUID,
     process_uc: Annotated[ProcessImageUseCase, Depends(get_process_use_case)] = None,  # type: ignore[assignment]
     get_uc: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
+    _rate: Annotated[None, Depends(process_rate_limiter())] = None,
 ):
     ok = await process_uc.execute(image_id)
     if not ok:

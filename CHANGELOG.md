@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-03-31
+
+### Security
+
+- Added per-IP sliding-window rate limiting to upload, processing, and retention
+  sweep endpoints to mitigate DoS attacks. Configurable via `IMG_RATE_LIMIT_UPLOAD_MAX`,
+  `IMG_RATE_LIMIT_UPLOAD_WINDOW`, `IMG_RATE_LIMIT_PROCESS_MAX`,
+  `IMG_RATE_LIMIT_PROCESS_WINDOW`, `IMG_RATE_LIMIT_READ_MAX`, and
+  `IMG_RATE_LIMIT_READ_WINDOW` environment variables. Read endpoints (list,
+  get, download) use a separate higher limit (60 req/min by default). Returns
+  HTTP 429 when the limit is exceeded.
+
 ## [1.2.3] - 2026-03-30
 
 ### Security

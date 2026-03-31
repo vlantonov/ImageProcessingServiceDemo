@@ -25,6 +25,7 @@ from src.infrastructure.database.postgres_image_repository import PostgresImageR
 from src.infrastructure.database.session import build_engine, build_session_factory
 from src.infrastructure.processing.pillow_processor import PillowImageProcessor
 from src.infrastructure.storage.local_image_storage import LocalImageStorage
+from src.presentation.api.rate_limit import RateLimiter
 
 
 @lru_cache
@@ -85,6 +86,24 @@ def _storage() -> LocalImageStorage:
 @lru_cache
 def _processor() -> PillowImageProcessor:
     return PillowImageProcessor(max_workers=get_settings().processing_max_workers)
+
+
+@lru_cache
+def upload_rate_limiter() -> RateLimiter:
+    settings = get_settings()
+    return RateLimiter(settings.rate_limit_upload_max, settings.rate_limit_upload_window)
+
+
+@lru_cache
+def process_rate_limiter() -> RateLimiter:
+    settings = get_settings()
+    return RateLimiter(settings.rate_limit_process_max, settings.rate_limit_process_window)
+
+
+@lru_cache
+def read_rate_limiter() -> RateLimiter:
+    settings = get_settings()
+    return RateLimiter(settings.rate_limit_read_max, settings.rate_limit_read_window)
 
 
 def get_upload_use_case() -> UploadImageUseCase:
