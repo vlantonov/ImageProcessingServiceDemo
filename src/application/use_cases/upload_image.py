@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 from src.application.dto.image_dto import ImageResponse
 from src.domain.entities.image import Image
 from src.domain.interfaces.image_repository import ImageRepository
 from src.domain.interfaces.image_storage import ImageStorage
+
+logger = logging.getLogger(__name__)
 
 
 class UploadImageUseCase:
@@ -36,6 +39,7 @@ class UploadImageUseCase:
         )
 
         saved = await self._repository.save(image)
+        logger.info("Image persisted: id=%s filename=%s path=%s", saved.id, filename, storage_path)
         return _to_response(saved)
 
 

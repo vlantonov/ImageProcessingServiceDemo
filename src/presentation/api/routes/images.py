@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Annotated
 
@@ -31,6 +32,8 @@ from src.presentation.schemas.image_schemas import (
     ImageOut,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/api/v1/images", tags=["images"], dependencies=[Depends(require_api_key)]
 )
@@ -49,6 +52,7 @@ async def upload_image(
     _rate: Annotated[None, Depends(upload_rate_limiter())] = None,
 ):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
+        logger.warning("Upload rejected: unsupported content type %s", file.content_type)
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Content type {file.content_type} not supported",
@@ -56,12 +60,14 @@ async def upload_image(
     if tags is None:
         tags = []
     if len(tags) > MAX_TAGS:
+        logger.warning("Upload rejected: too many tags (%d)", len(tags))
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Maximum {MAX_TAGS} tags allowed",
         )
     data = await file.read()
     if len(data) > MAX_UPLOAD_SIZE:
+        logger.warning("Upload rejected: file too large (%d bytes)", len(data))
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File exceeds 50 MB limit",
@@ -69,6 +75,7 @@ async def upload_image(
     try:
         validate_image_bytes(data)
     except InvalidImageError as exc:
+        logger.warning("Upload rejected: image validation failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Image validation failed: {exc}",
@@ -80,6 +87,7 @@ async def upload_image(
         tags=tags,
         ttl_hours=ttl_hours,
     )
+    logger.info("Image uploaded: id=%s filename=%s size=%d", result.id, safe_filename, len(data))
     return result
 
 
@@ -102,6 +110,7 @@ async def get_image(
 ):
     result = await use_case.execute(image_id)
     if result is None:
+        logger.info("Image not found: %s", image_id)
         raise HTTPException(status_code=404, detail="Image not found")
     return result
 
@@ -115,6 +124,7 @@ async def download_image(
 ):
     data = await use_case.get_file(image_id, thumbnail=thumbnail)
     if data is None:
+        logger.info("Image file not found: %s (thumbnail=%s)", image_id, thumbnail)
         raise HTTPException(status_code=404, detail="Image file not found")
     return Response(content=data, media_type="application/octet-stream")
 
@@ -138,5 +148,6 @@ async def process_single_image(
 ):
     ok = await process_uc.execute(image_id)
     if not ok:
+        logger.info("Process requested for unknown image: %s", image_id)
         raise HTTPException(status_code=404, detail="Image not found")
     return await get_uc.execute(image_id)

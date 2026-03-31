@@ -7,11 +7,14 @@ automatically invalidate the cache to maintain consistency.
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 from src.domain.entities.image import Image
 from src.domain.interfaces.image_repository import ImageRepository
 from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
+
+logger = logging.getLogger(__name__)
 
 
 class CachedImageRepository(ImageRepository):
@@ -29,7 +32,9 @@ class CachedImageRepository(ImageRepository):
     async def get_by_id(self, image_id: uuid.UUID) -> Image | None:
         cached = self._cache.get(image_id)
         if cached is not None:
+            logger.debug("Cache hit: image=%s", image_id)
             return cached
+        logger.debug("Cache miss: image=%s", image_id)
         image = await self._inner.get_by_id(image_id)
         if image is not None:
             self._cache.set(image)

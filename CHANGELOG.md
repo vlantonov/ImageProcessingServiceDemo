@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CorrelationIdFilter` logging filter that injects `correlation_id` into every log record.
 - `JSONFormatter` for machine-readable JSON log output (opt-in via `configure_logging(json_output=True)`).
 - `configure_logging()` helper replacing `logging.basicConfig()` with correlation-aware formatting.
+- Targeted logging across all layers: upload/rejection/404 in routes, image
+  lifecycle in use cases, batch start/complete in pipeline, file I/O in storage
+  (DEBUG), and cache hit/miss in repository (DEBUG).
 
 ## [1.2.4] - 2026-03-31
 
