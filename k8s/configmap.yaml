@@ -4,7 +4,9 @@ metadata:
   name: image-service-config
   namespace: cv-platform
 data:
-  IMG_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres-svc:5432/images"
+  IMG_DB_HOST: "postgres-svc"
+  IMG_DB_PORT: "5432"
+  IMG_DB_NAME: "images"
   IMG_STORAGE_BASE_DIR: "/data/images"
   IMG_PROCESSING_MAX_WORKERS: "4"
   IMG_DB_POOL_SIZE: "20"

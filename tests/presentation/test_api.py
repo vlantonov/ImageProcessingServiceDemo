@@ -96,7 +96,11 @@ def client(image_response, tmp_path) -> TestClient:
     app.dependency_overrides[get_process_use_case] = lambda: mock_process
 
     # Health endpoint: provide real tmp_path for storage and mock the DB check
-    test_settings = Settings(storage_base_dir=str(tmp_path))
+    test_settings = Settings(
+        storage_base_dir=str(tmp_path),
+        db_user="test",
+        db_password="test",
+    )
     app.dependency_overrides[get_settings] = lambda: test_settings
 
     async def _ok_db_check():
@@ -206,7 +210,12 @@ def auth_client(image_response, tmp_path) -> TestClient:
     app.dependency_overrides[get_list_use_case] = lambda: mock_list
     app.dependency_overrides[get_process_use_case] = lambda: mock_process
 
-    test_settings = Settings(storage_base_dir=str(tmp_path), api_key="test-secret-key")
+    test_settings = Settings(
+        storage_base_dir=str(tmp_path),
+        api_key="test-secret-key",
+        db_user="test",
+        db_password="test",
+    )
     app.dependency_overrides[get_settings] = lambda: test_settings
 
     async def _ok_db_check():

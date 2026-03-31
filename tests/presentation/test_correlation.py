@@ -141,7 +141,11 @@ def client(tmp_path):
     )
     app.dependency_overrides[get_list_use_case] = lambda: mock_list
 
-    test_settings = Settings(storage_base_dir=str(tmp_path))
+    test_settings = Settings(
+        storage_base_dir=str(tmp_path),
+        db_user="test",
+        db_password="test",
+    )
     app.dependency_overrides[get_settings] = lambda: test_settings
 
     async def _ok_db():

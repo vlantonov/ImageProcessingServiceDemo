@@ -20,7 +20,8 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Start the server (requires PostgreSQL)
-export IMG_DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/images"
+export IMG_DB_USER="postgres"
+export IMG_DB_PASSWORD="postgres"
 uvicorn src.main:app --reload
 ```
 
@@ -79,7 +80,11 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMG_DATABASE_URL` | `postgresql+asyncpg://...` | Async database connection string |
+| `IMG_DB_USER` | *(required)* | Database username (no default — must be set) |
+| `IMG_DB_PASSWORD` | *(required)* | Database password (no default — must be set) |
+| `IMG_DB_HOST` | `localhost` | Database hostname |
+| `IMG_DB_PORT` | `5432` | Database port |
+| `IMG_DB_NAME` | `images` | Database name |
 | `IMG_DB_POOL_SIZE` | `10` | SQLAlchemy connection pool size |
 | `IMG_DB_MAX_OVERFLOW` | `20` | Max overflow connections |
 | `IMG_STORAGE_BASE_DIR` | `/data/images` | Image file storage path |

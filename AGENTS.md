@@ -120,7 +120,11 @@ All settings use the `IMG_` environment variable prefix via pydantic-settings. K
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `IMG_DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/images` | DB connection |
+| `IMG_DB_USER` | *(required)* | Database username |
+| `IMG_DB_PASSWORD` | *(required)* | Database password |
+| `IMG_DB_HOST` | `localhost` | Database hostname |
+| `IMG_DB_PORT` | `5432` | Database port |
+| `IMG_DB_NAME` | `images` | Database name |
 | `IMG_STORAGE_BASE_DIR` | `/data/images` | File storage path |
 | `IMG_PROCESSING_MAX_WORKERS` | `4` | CPU worker pool size |
 | `IMG_THUMBNAIL_MAX_SIZE` | `256` | Max thumbnail dimension (px) |

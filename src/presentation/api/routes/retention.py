@@ -30,7 +30,7 @@ router = APIRouter(
 async def trigger_retention_sweep(
     use_case: Annotated[ApplyRetentionUseCase, Depends(get_retention_use_case)] = None,  # type: ignore[assignment]
     settings: Annotated[Settings, Depends(get_settings)] = None,  # type: ignore[assignment]
-    _rate: Annotated[None, Depends(process_rate_limiter())] = None,
+    _rate: Annotated[None, Depends(process_rate_limiter)] = None,
 ):
     logger.info("Retention sweep triggered, batch_size=%d", settings.retention_batch_size)
     result = await use_case.execute(batch_size=settings.retention_batch_size)

@@ -69,7 +69,8 @@ cv-platform namespace
 │   ├── image-service (NodePort :80 → :8000, nodePort 30080)
 │   ├── image-data-pvc (2Gi)
 │   └── image-service-hpa (1–4 replicas, 70% CPU target)
-└── image-service-config (ConfigMap)
+├── image-service-config (ConfigMap)
+└── image-service-db-credentials (Secret)
 ```
 
 ## Manual Access

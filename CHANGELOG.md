@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-31
+
+### Security
+
+- Moved database credentials out of source code and configuration defaults.
+  `IMG_DB_USER` and `IMG_DB_PASSWORD` are now required environment variables
+  with no hardcoded fallback. The `IMG_DATABASE_URL` setting is replaced by
+  individual `IMG_DB_USER`, `IMG_DB_PASSWORD`, `IMG_DB_HOST`, `IMG_DB_PORT`,
+  and `IMG_DB_NAME` variables. Kubernetes manifests use `Secret` resources
+  instead of storing credentials in ConfigMaps. Docker Compose reads
+  credentials from the host environment (see `.env.example`).
+- Added Kubernetes `SecurityContext` to all deployments: `runAsNonRoot: true`,
+  `allowPrivilegeEscalation: false`, and `readOnlyRootFilesystem: true`.
+  Writable paths (`/data/images`, `/tmp`, PostgreSQL's `/var/run/postgresql`)
+  use `emptyDir` or PVC mounts.
+
+### Changed
+
+- `Settings.database_url` is now a computed property assembled from individual
+  DB credential fields, with password URL-encoding via `urllib.parse.quote_plus`.
+
 ## [1.3.0] - 2026-03-31
 
 ### Added
