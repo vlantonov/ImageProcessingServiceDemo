@@ -158,7 +158,7 @@
 | NFR-5.1 | Content-type validation | `ALLOWED_CONTENT_TYPES` check before processing |
 | NFR-5.2 | Upload size bound | `MAX_UPLOAD_SIZE = 50 MB` |
 | NFR-5.3 | Non-root Docker | `USER appuser` in Dockerfile |
-| NFR-5.4 | Injectable credentials | `IMG_DATABASE_URL` env var |
+| NFR-5.4 | Injectable credentials | `IMG_DB_USER`/`IMG_DB_PASSWORD` env vars (required, no defaults) |
 | NFR-5.5 | API boundary validation | `ImageUploadParams`, `BatchProcessRequest` — Pydantic constraints |
 | NFR-6.1 | Pure domain unit tests | `tests/domain/` — no mocks, no I/O |
 | NFR-6.2 | Mocked use case tests | `tests/application/` — `AsyncMock` for all ports |

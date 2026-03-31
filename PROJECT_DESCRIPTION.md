@@ -110,8 +110,11 @@ The service is designed to run in a Kubernetes environment with production-grade
 | `deployment.yaml` | 2 replicas, resource requests/limits, liveness and readiness probes |
 | `service.yaml` | ClusterIP service exposing port 80 → 8000 |
 | `hpa.yaml` | Horizontal Pod Autoscaler: 2–10 replicas based on CPU (70%) and memory (80%) |
-| `configmap.yaml` | Environment configuration (database URL, pool sizes, storage path) |
+| `configmap.yaml` | Environment configuration (database host, pool sizes, storage path) |
+| `secret.yaml` | Database credentials (`IMG_DB_USER`, `IMG_DB_PASSWORD`) via Kubernetes Secret |
 | `pvc.yaml` | 50Gi PersistentVolumeClaim with ReadWriteMany access |
+
+All pods run with hardened **SecurityContext**: `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, and `readOnlyRootFilesystem: true` (writable paths use `emptyDir` or PVC mounts).
 
 A complete **Minikube demo** is included (`minikube/`) with automated setup, teardown, and demo scripts that deploy the full stack locally and exercise all API endpoints.
 
@@ -123,7 +126,11 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMG_DATABASE_URL` | `postgresql+asyncpg://...` | Async database connection string |
+| `IMG_DB_USER` | *(required)* | Database username (no default — must be set) |
+| `IMG_DB_PASSWORD` | *(required)* | Database password (no default — must be set) |
+| `IMG_DB_HOST` | `localhost` | Database hostname |
+| `IMG_DB_PORT` | `5432` | Database port |
+| `IMG_DB_NAME` | `images` | Database name |
 | `IMG_DB_POOL_SIZE` | `10` | Connection pool size |
 | `IMG_DB_MAX_OVERFLOW` | `20` | Maximum overflow connections |
 | `IMG_STORAGE_BASE_DIR` | `/data/images` | File storage path |
