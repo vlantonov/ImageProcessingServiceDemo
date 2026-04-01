@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-04-01
+
+### Added
+
+- Edge-case tests for failures, timeouts, and concurrent access across
+  application, infrastructure, and presentation layers (67 new tests).
+
 ## [2.0.0] - 2026-03-31
 
 ### Security
