@@ -40,7 +40,17 @@ class UploadImageUseCase:
 
         saved = await self._repository.save(image)
         logger.info("Image persisted: id=%s filename=%s path=%s", saved.id, filename, storage_path)
+        self._record_upload()
         return _to_response(saved)
+
+    @staticmethod
+    def _record_upload() -> None:
+        try:
+            from src.infrastructure.observability.metrics import image_uploads_total
+
+            image_uploads_total.add(1)
+        except Exception:
+            pass
 
 
 def _to_response(img: Image) -> ImageResponse:
