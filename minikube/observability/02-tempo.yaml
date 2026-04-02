@@ -76,6 +76,16 @@ data:
         block_retention: 48h
 
     metrics_generator:
+      processor:
+        service_graphs:
+          dimensions:
+            - http.method
+            - http.route
+        span_metrics:
+          dimensions:
+            - http.method
+            - http.route
+            - http.status_code
       registry:
         external_labels:
           source: tempo
@@ -85,6 +95,13 @@ data:
         remote_write:
           - url: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
             send_exemplars: true
+
+    overrides:
+      defaults:
+        metrics_generator:
+          processors:
+            - service-graphs
+            - span-metrics
 ---
 apiVersion: v1
 kind: Service

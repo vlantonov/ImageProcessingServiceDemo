@@ -10,7 +10,7 @@
       "title": "Traces - Service Map",
       "type": "nodeGraph",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
-      "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
           "queryType": "serviceMap"
@@ -21,7 +21,7 @@
       "title": "Recent Traces",
       "type": "table",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 10 },
-      "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
           "queryType": "nativeSearch",
@@ -34,7 +34,7 @@
       "title": "Trace Duration Distribution",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{path=~\"/api/.*\"}[5m])) by (le, path))",
@@ -55,22 +55,7 @@
   ],
   "schemaVersion": 39,
   "tags": ["image-service", "traces", "tempo"],
-  "templating": {
-    "list": [
-      {
-        "name": "DS_TEMPO",
-        "type": "datasource",
-        "query": "tempo",
-        "current": { "text": "Tempo", "value": "Tempo" }
-      },
-      {
-        "name": "DS_PROMETHEUS",
-        "type": "datasource",
-        "query": "prometheus",
-        "current": { "text": "Prometheus", "value": "Prometheus" }
-      }
-    ]
-  },
+  "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "title": "Image Service - Traces",
   "uid": "image-service-traces",

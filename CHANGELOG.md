@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`/var/log/pods/cv-platform_image-service-*/*/*.log`) as a reliable fallback
   alongside Kubernetes SD, with `docker: {}` pipeline stage for container log
   format unwrapping.
+- Grafana provisioned datasources now have explicit `uid` fields (`prometheus`,
+  `tempo`, `loki`), fixing "Datasource prometheus was not found" errors in
+  Tempo's Service Map panel and dashboard cross-references.
+- Replaced `${DS_PROMETHEUS}`, `${DS_TEMPO}`, and `${DS_LOKI}` template
+  variables in all provisioned dashboard JSON files with hardcoded datasource
+  UIDs, since Grafana provisioned dashboards do not resolve template variables.
+- Enabled Tempo metrics generator with `service-graphs` and `span-metrics`
+  processors, and added `--web.enable-remote-write-receiver` to Prometheus, so
+  the Service Map panel receives `traces_service_graph_*` metrics.
+- Fixed `06-grafana-dashboards.yaml` ConfigMap which contained `PLACEHOLDER`
+  instead of actual dashboard JSON; now embeds the real dashboard definitions.
 
 ## [2.1.0] - 2026-04-02
 

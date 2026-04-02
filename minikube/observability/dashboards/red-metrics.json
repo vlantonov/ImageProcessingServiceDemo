@@ -10,7 +10,7 @@
       "title": "Request Rate (req/s)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(http_requests_total[5m])) by (method, path)",
@@ -28,7 +28,7 @@
       "title": "Error Rate (errors/s)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(http_request_errors_total[5m])) by (status_code)",
@@ -47,7 +47,7 @@
       "title": "Request Latency (p50 / p90 / p99)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
@@ -73,7 +73,7 @@
       "title": "Active Requests (Saturation)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(http_active_requests)",
@@ -95,7 +95,7 @@
       "title": "Image Processing Latency (p50 / p90 / p99)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum(rate(image_processing_duration_seconds_bucket[5m])) by (le))",
@@ -121,7 +121,7 @@
       "title": "Image Uploads (total)",
       "type": "stat",
       "gridPos": { "h": 8, "w": 6, "x": 12, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(image_uploads_total)",
@@ -136,7 +136,7 @@
       "title": "Error Rate %",
       "type": "gauge",
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 16 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(http_request_errors_total[5m])) / sum(rate(http_requests_total[5m])) * 100",
@@ -163,14 +163,7 @@
   "schemaVersion": 39,
   "tags": ["image-service", "RED", "metrics"],
   "templating": {
-    "list": [
-      {
-        "name": "DS_PROMETHEUS",
-        "type": "datasource",
-        "query": "prometheus",
-        "current": { "text": "Prometheus", "value": "Prometheus" }
-      }
-    ]
+    "list": []
   },
   "time": { "from": "now-1h", "to": "now" },
   "title": "Image Service - RED Metrics",
