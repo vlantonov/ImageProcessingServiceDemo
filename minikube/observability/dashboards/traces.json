@@ -28,7 +28,37 @@
           "serviceName": "image-processing-service",
           "limit": 20
         }
-      ]
+      ],
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Trace",
+                    "internal": {
+                      "datasourceUid": "tempo",
+                      "datasourceName": "Tempo",
+                      "query": {
+                        "refId": "A",
+                        "queryType": "traceql",
+                        "query": "${__value.raw}",
+                        "datasource": {
+                          "type": "tempo",
+                          "uid": "tempo"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "title": "Trace Duration Distribution",
