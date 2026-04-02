@@ -77,7 +77,7 @@ async def upload_image(
     except InvalidImageError as exc:
         logger.warning("Upload rejected: image validation failed: %s", exc)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Image validation failed: {exc}",
         ) from exc
     safe_filename = sanitize_filename(file.filename or "unnamed")
