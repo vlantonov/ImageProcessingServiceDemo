@@ -43,6 +43,16 @@ cd minikube && ./setup.sh    # deploy full stack
 
 See [minikube/README.md](minikube/README.md) for details.
 
+### Observability Stack (Minikube)
+
+```bash
+cd minikube/observability && ./setup.sh   # deploy Prometheus, Tempo, Loki, Grafana
+minikube service grafana --namespace=observability  # open Grafana
+./teardown.sh                             # clean up
+```
+
+See [minikube/observability/README.md](minikube/observability/README.md) for dashboards and configuration.
+
 ### Kubernetes (Production)
 
 ```bash
@@ -99,6 +109,9 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_RATE_LIMIT_READ_MAX` | `60` | Max read requests per window per IP |
 | `IMG_RATE_LIMIT_READ_WINDOW` | `60` | Read rate limit window (seconds) |
 | `IMG_DEBUG` | `false` | Enable debug logging |
+| `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
+| `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
+| `IMG_OTEL_SERVICE_NAME` | `image-processing-service` | Service name in traces and metrics |
 
 ## Project Structure
 
@@ -109,11 +122,13 @@ src/
 ├── domain/                            # Entities & ports (zero external deps)
 ├── application/                       # Use cases & DTOs
 ├── infrastructure/                    # Adapters (PostgreSQL, Pillow, filesystem)
+│   └── observability/                 # OpenTelemetry setup, metrics, middleware
 └── presentation/                      # FastAPI routes, schemas, middleware
 
 cpp/                                   # Optional C++ resize module (pybind11)
 k8s/                                   # Kubernetes manifests (Deployment, HPA, PVC, …)
 minikube/                              # Local K8s demo scripts
+│   └── observability/                 # Prometheus, Tempo, Loki, Grafana manifests
 tests/                                 # tests across all architecture layers
 ```
 

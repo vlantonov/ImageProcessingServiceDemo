@@ -7,6 +7,7 @@ ProcessPoolExecutor via asyncio.
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 
 from src.domain.entities.image import ImageMetadata
@@ -38,6 +39,7 @@ class ProcessImageUseCase:
         image.mark_processing()
         await self._repository.save(image)
 
+        start = time.perf_counter()
         thumb_path: str | None = None
         try:
             raw_data = await self._storage.retrieve(image.original_path)
@@ -54,6 +56,10 @@ class ProcessImageUseCase:
             )
             image.mark_completed(thumb_path, metadata)
             await self._repository.save(image)
+
+            elapsed = time.perf_counter() - start
+            self._record_duration(elapsed)
+
             logger.info(
                 "Processing completed: image=%s width=%d height=%d format=%s",
                 image_id,
@@ -73,3 +79,12 @@ class ProcessImageUseCase:
             raise
 
         return True
+
+    @staticmethod
+    def _record_duration(elapsed: float) -> None:
+        try:
+            from src.infrastructure.observability.metrics import image_processing_duration
+
+            image_processing_duration.record(elapsed, {"operation": "thumbnail"})
+        except Exception:
+            pass

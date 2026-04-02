@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-04-02
+
+### Added
+
+- OpenTelemetry integration for distributed tracing, metrics, and log correlation.
+  Traces are exported via OTLP gRPC to Tempo; metrics are exposed via a Prometheus
+  `/metrics` endpoint; structured JSON logs include `trace_id` and `span_id` for
+  Loki–Tempo correlation.
+- RED metrics (Rate, Errors, Duration) and saturation gauges via custom
+  `MetricsMiddleware`: `http_requests_total`, `http_request_errors_total`,
+  `http_request_duration_seconds`, `http_active_requests`.
+- Image processing metrics: `image_processing_duration_seconds`,
+  `image_uploads_total`, `images_currently_processing`.
+- Auto-instrumentation for FastAPI routes and SQLAlchemy queries using
+  `opentelemetry-instrumentation-fastapi` and
+  `opentelemetry-instrumentation-sqlalchemy`.
+- Observability stack Kubernetes manifests (`minikube/observability/`):
+  Prometheus, Tempo, Loki, Promtail (DaemonSet), and Grafana with
+  pre-provisioned datasources and dashboards.
+- Three Grafana dashboards provisioned automatically:
+  - **RED Metrics** — request rate, error rate, latency percentiles, saturation
+  - **Traces** — service map, recent traces, duration distribution
+  - **Logs** — application logs, log volume by level, error log filter
+- `IMG_OTEL_ENABLED`, `IMG_OTEL_EXPORTER_OTLP_ENDPOINT`, and
+  `IMG_OTEL_SERVICE_NAME` configuration settings for opt-in observability.
+- Trace context (`trace_id`, `span_id`, `trace_flags`) injected into JSON log
+  output via `opentelemetry-instrumentation-logging`.
+- `minikube/observability/setup.sh` and `teardown.sh` scripts for one-command
+  deployment of the full observability stack.
+
+### Fixed
+
+- Trace context (`trace_id`, `span_id`) now correctly appears in log records by
+  using a `log_hook` callback in `LoggingInstrumentor` instead of relying on the
+  no-op `set_logging_format=False` mode.
+- OpenTelemetry `TracerProvider` and `MeterProvider` are now initialized in
+  `create_app()` before `FastAPIInstrumentor.instrument_app()`, ensuring spans
+  are created with the real provider instead of the no-op default.
+- Switched Dockerfile CMD to Uvicorn `--factory` mode
+  (`src.main:create_app --factory`) so each worker process initializes its own
+  `TracerProvider` and gRPC exporter, avoiding broken state from pre-fork setup.
+- Promtail log collection: added static `__path__` glob
+  (`/var/log/pods/cv-platform_image-service-*/*/*.log`) as a reliable fallback
+  alongside Kubernetes SD, with `docker: {}` pipeline stage for container log
+  format unwrapping.
+- Grafana provisioned datasources now have explicit `uid` fields (`prometheus`,
+  `tempo`, `loki`), fixing "Datasource prometheus was not found" errors in
+  Tempo's Service Map panel and dashboard cross-references.
+- Replaced `${DS_PROMETHEUS}`, `${DS_TEMPO}`, and `${DS_LOKI}` template
+  variables in all provisioned dashboard JSON files with hardcoded datasource
+  UIDs, since Grafana provisioned dashboards do not resolve template variables.
+- Enabled Tempo metrics generator with `service-graphs` and `span-metrics`
+  processors, and added `--web.enable-remote-write-receiver` to Prometheus, so
+  the Service Map panel receives `traces_service_graph_*` metrics.
+- Fixed `06-grafana-dashboards.yaml` ConfigMap which contained `PLACEHOLDER`
+  instead of actual dashboard JSON; now embeds the real dashboard definitions.
+- Changed Grafana anonymous org role from `Viewer` to `Editor` so trace ID links
+  in the Traces dashboard can open the Explore view.
+- `image_uploads_total` counter is now incremented in `UploadImageUseCase` on
+  each successful upload; previously the metric was defined but never recorded.
+
 ## [2.0.2] - 2026-04-02
 
 ### Added
@@ -249,7 +310,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.3.0...v2.0.0

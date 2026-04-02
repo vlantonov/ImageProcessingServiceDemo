@@ -98,5 +98,6 @@ else
 fi
 echo ""
 echo -e "  Run the demo: ${CYAN}./minikube/demo.sh${NC}"
+echo -e "  Observability: ${CYAN}./minikube/observability/setup.sh${NC}"
 echo ""
 echo "════════════════════════════════════════════════════════════════════"

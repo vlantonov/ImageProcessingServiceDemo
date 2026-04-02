@@ -120,6 +120,44 @@ A complete **Minikube demo** is included (`minikube/`) with automated setup, tea
 
 ---
 
+## Observability (OpenTelemetry)
+
+The service is fully instrumented with **OpenTelemetry** for distributed tracing, metrics, and log correlation — enabled via `IMG_OTEL_ENABLED=true`.
+
+### Tracing
+
+- Auto-instrumentation for FastAPI routes and SQLAlchemy queries via `opentelemetry-instrumentation-fastapi` and `opentelemetry-instrumentation-sqlalchemy`.
+- Traces exported via OTLP gRPC to **Grafana Tempo**, with `trace_id` and `span_id` injected into structured JSON logs for correlation.
+
+### Metrics (RED + Saturation)
+
+- **Rate**: `http_requests_total` — total HTTP requests by method, path, status.
+- **Errors**: `http_request_errors_total` — 4xx/5xx errors by status code.
+- **Duration**: `http_request_duration_seconds` — request latency histogram.
+- **Saturation**: `http_active_requests` — in-flight request gauge.
+- **Image processing**: `image_processing_duration_seconds`, `image_uploads_total`, `images_currently_processing`.
+- Metrics exposed via a Prometheus `/metrics` endpoint, scraped by **Prometheus**.
+
+### Logging
+
+- Structured JSON logs with `trace_id`, `span_id`, and `correlation_id` fields.
+- Collected by **Promtail** and shipped to **Grafana Loki** for aggregation and search.
+- Derived fields in Loki link `trace_id` to Tempo for seamless log-to-trace navigation.
+
+### Grafana Dashboards
+
+Three dashboards are provisioned automatically:
+
+| Dashboard | Description |
+|-----------|-------------|
+| **RED Metrics** | Request rate, error rate, latency percentiles, saturation gauges |
+| **Traces** | Service map, recent traces with clickable trace IDs, duration distribution |
+| **Logs** | Application logs, log volume by level, error log filter |
+
+The full observability stack (Prometheus, Tempo, Loki, Promtail, Grafana) deploys to a separate `observability` Kubernetes namespace via `minikube/observability/setup.sh`.
+
+---
+
 ## 12-Factor Configuration
 
 All settings are provided via environment variables (prefix `IMG_`) using **pydantic-settings**, ensuring type-safe, validated configuration:
@@ -145,6 +183,9 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 | `IMG_RATE_LIMIT_READ_MAX` | `60` | Max read requests per window per IP |
 | `IMG_RATE_LIMIT_READ_WINDOW` | `60` | Read rate limit window (seconds) |
 | `IMG_DEBUG` | `false` | Enable debug logging |
+| `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
+| `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
+| `IMG_OTEL_SERVICE_NAME` | `image-processing-service` | Service name in traces and metrics |
 
 ---
 
@@ -188,6 +229,8 @@ Test tooling: pytest, pytest-asyncio (auto mode), httpx, aiosqlite (in-memory SQ
 | Multi-Stage Docker | Builder/runtime separation for minimal production images |
 | Horizontal Autoscaling | Kubernetes HPA scales pods based on CPU and memory metrics |
 | 12-Factor Config | Type-safe environment variables via pydantic-settings |
+| OpenTelemetry | Distributed tracing, metrics, and log correlation across services |
+| RED Metrics | Rate, Errors, Duration monitoring via custom middleware |
 | FastAPI DI | Routes depend on use case abstractions, not concrete implementations |
 
 ---
@@ -205,4 +248,5 @@ Test tooling: pytest, pytest-asyncio (auto mode), httpx, aiosqlite (in-memory SQ
 | **Orchestration** | Kubernetes, Minikube (local demo) |
 | **Testing** | pytest, pytest-asyncio, httpx, aiosqlite |
 | **Code Quality** | ruff (linter/formatter), mypy (type checker) |
+| **Observability** | OpenTelemetry SDK, Prometheus, Grafana, Tempo, Loki, Promtail |
 | **Migrations** | Alembic |

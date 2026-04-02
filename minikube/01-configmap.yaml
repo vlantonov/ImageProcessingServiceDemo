@@ -13,3 +13,6 @@ data:
   IMG_DB_MAX_OVERFLOW: "10"
   IMG_RETENTION_BATCH_SIZE: "50"
   IMG_DEBUG: "true"
+  IMG_OTEL_ENABLED: "true"
+  IMG_OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo.observability.svc.cluster.local:4317"
+  IMG_OTEL_SERVICE_NAME: "image-processing-service"
