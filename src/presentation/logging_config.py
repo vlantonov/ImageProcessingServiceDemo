@@ -37,6 +37,9 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
             "correlation_id": getattr(record, "correlation_id", ""),
+            "trace_id": getattr(record, "otelTraceID", ""),
+            "span_id": getattr(record, "otelSpanID", ""),
+            "trace_flags": getattr(record, "otelTraceSampled", ""),
         }
         if record.exc_info and record.exc_info[1] is not None:
             log_entry["exception"] = self.formatException(record.exc_info)

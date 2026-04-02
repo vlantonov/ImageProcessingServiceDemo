@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: observability
+binaryData: {}
+data:
+  red-metrics.json: |
+    PLACEHOLDER
+  traces.json: |
+    PLACEHOLDER
+  logs.json: |
+    PLACEHOLDER
