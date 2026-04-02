@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-04-02
+
+### Added
+
+- SQLite-backed integration tests for `PostgresImageRepository`, covering all
+  repository methods with real SQL queries instead of mocked calls (28 tests).
+- Unit tests for `ListImagesUseCase` — pagination, status filtering, and
+  response mapping (5 tests).
+- Direct in-process tests for `_generate_thumbnail_sync` and
+  `_extract_metadata_sync` worker functions, plus `shutdown_executor` lifecycle
+  tests (12 tests).
+- Lifespan integration tests verifying startup table creation, shutdown cleanup
+  (`engine.dispose`, `shutdown_executor`), and log output (3 tests).
+
+### Fixed
+
+- Replaced deprecated `HTTP_422_UNPROCESSABLE_ENTITY` with
+  `HTTP_422_UNPROCESSABLE_CONTENT` in the upload validation error response.
+
 ## [2.0.1] - 2026-04-01
 
 ### Added
@@ -230,7 +249,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.3...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.1...v2.0.2
+[2.0.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.3.0...v2.0.0
+[1.3.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.4...v1.3.0
+[1.2.4]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v1.2.0...v1.2.1
