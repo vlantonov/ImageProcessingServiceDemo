@@ -23,6 +23,13 @@ def _is_otel_enabled() -> bool:
     return os.getenv("IMG_OTEL_ENABLED", "false").lower() in ("1", "true", "yes")
 
 
+def _is_cors_enabled() -> bool:
+    """Check CORS origins without requiring full Settings (DB creds may be absent)."""
+    import os
+
+    return bool(os.getenv("IMG_CORS_ORIGINS", ""))
+
+
 configure_logging(json_output=_is_otel_enabled())
 logger = logging.getLogger(__name__)
 
@@ -91,8 +98,8 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestLoggingMiddleware)
 
-    settings = get_settings()
-    if settings.cors_origins:
+    if _is_cors_enabled():
+        settings = get_settings()
         app.add_middleware(
             CORSMiddleware,
             allow_origins=settings.cors_origins,
