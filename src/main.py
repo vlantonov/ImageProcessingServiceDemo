@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib.metadata
 import logging
 from contextlib import asynccontextmanager
@@ -9,7 +10,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.infrastructure.database.models import Base
 from src.presentation.api.dependencies import get_settings
 from src.presentation.api.middleware import RequestLoggingMiddleware
 from src.presentation.api.routes import health, images, retention
@@ -36,7 +36,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create database tables on startup (for demo/dev; use Alembic in production)."""
+    """Run Alembic migrations on startup, clean up on shutdown."""
+    from alembic import command
+    from alembic.config import Config
+
     from src.infrastructure.database.session import build_engine
 
     settings = get_settings()
@@ -53,9 +56,10 @@ async def lifespan(app: FastAPI):
         instrument_logging()
         logger.info("OpenTelemetry initialized")
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables ready")
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
+    logger.info("Database migrations applied")
     yield
     from src.infrastructure.processing.pillow_processor import shutdown_executor
 
