@@ -25,19 +25,20 @@ class TestLifespan:
                 return_value=engine,
             ),
             patch(
-                "src.infrastructure.processing.pillow_processor.shutdown_executor",
+                "src.infrastructure.processing.pillow_processor.async_shutdown_executor",
+                new_callable=AsyncMock,
             ) as mock_shutdown,
         ):
             async with lifespan(mock_app):
                 pass
 
-            # After exiting: shutdown_executor was called
-            mock_shutdown.assert_called_once()
+            # After exiting: async_shutdown_executor was called
+            mock_shutdown.assert_awaited_once()
 
         await engine.dispose()
 
     async def test_shutdown_disposes_engine_and_executor(self):
-        """Verify engine.dispose() and shutdown_executor are called during shutdown."""
+        """Verify engine.dispose() and async_shutdown_executor are called during shutdown."""
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         original_dispose = engine.dispose
         mock_dispose = AsyncMock(side_effect=original_dispose)
@@ -53,7 +54,8 @@ class TestLifespan:
                 return_value=engine,
             ),
             patch(
-                "src.infrastructure.processing.pillow_processor.shutdown_executor",
+                "src.infrastructure.processing.pillow_processor.async_shutdown_executor",
+                new_callable=AsyncMock,
             ) as mock_shutdown,
             patch.object(AsyncEngine, "dispose", mock_dispose),
         ):
@@ -61,7 +63,7 @@ class TestLifespan:
                 pass
 
             mock_dispose.assert_awaited_once()
-            mock_shutdown.assert_called_once()
+            mock_shutdown.assert_awaited_once()
 
     async def test_lifespan_logs_startup_message(self, caplog: pytest.LogCaptureFixture):
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -76,7 +78,10 @@ class TestLifespan:
                 "src.infrastructure.database.session.build_engine",
                 return_value=engine,
             ),
-            patch("src.infrastructure.processing.pillow_processor.shutdown_executor"),
+            patch(
+                "src.infrastructure.processing.pillow_processor.async_shutdown_executor",
+                new_callable=AsyncMock,
+            ),
             caplog.at_level("INFO"),
         ):
             async with lifespan(mock_app):

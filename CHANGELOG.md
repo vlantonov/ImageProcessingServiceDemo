@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the hardcoded 256 px default regardless of configuration.
 - `InMemoryImageCache` now uses `asyncio.Lock` instead of `threading.Lock`,
   eliminating event-loop blocking under concurrent async access.
+- Executor shutdown during app lifespan is now async with a 30-second timeout.
+  Previously `shutdown(wait=True)` blocked the event loop indefinitely; now
+  in-flight tasks are given time to finish and force-cancelled on timeout.
 
 ## [2.2.1] - 2026-04-03
 
