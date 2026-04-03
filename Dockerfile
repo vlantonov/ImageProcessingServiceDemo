@@ -18,8 +18,12 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY pyproject.toml .
+COPY alembic.ini .
+COPY migrations/ migrations/
+COPY entrypoint.sh .
 COPY src/ src/
-RUN pip install --no-cache-dir --no-deps .
+RUN pip install --no-cache-dir --no-deps . \
+    && chmod +x entrypoint.sh
 
 RUN mkdir -p /data/images && chown -R appuser:appuser /data
 
@@ -27,4 +31,5 @@ USER appuser
 
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["uvicorn", "src.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

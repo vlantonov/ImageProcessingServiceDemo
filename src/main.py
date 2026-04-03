@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.infrastructure.database.models import Base
 from src.presentation.api.dependencies import get_settings
 from src.presentation.api.middleware import RequestLoggingMiddleware
 from src.presentation.api.routes import health, images, retention
@@ -36,7 +35,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create database tables on startup (for demo/dev; use Alembic in production)."""
+    """Prepare database engine and clean up on shutdown.
+
+    Migrations are handled by the Docker entrypoint (``alembic upgrade head``)
+    before Uvicorn forks workers.
+    """
     from src.infrastructure.database.session import build_engine
 
     settings = get_settings()
@@ -53,9 +56,7 @@ async def lifespan(app: FastAPI):
         instrument_logging()
         logger.info("OpenTelemetry initialized")
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables ready")
+    logger.info("Application startup complete")
     yield
     from src.infrastructure.processing.pillow_processor import shutdown_executor
 

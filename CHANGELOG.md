@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-04-03
+
+### Changed
+
+- Replaced `Base.metadata.create_all()` startup table creation with Alembic
+  migrations. A Docker entrypoint runs `alembic upgrade head` once before
+  Uvicorn forks workers, providing versioned, repeatable schema management
+  suitable for production. An initial migration (`0001_initial_schema`)
+  captures the existing `images` table schema including all indexes; it is
+  idempotent, so upgrading from a `create_all()`-based deployment works
+  without manual intervention.
+
 ## [2.2.0] - 2026-04-03
 
 ### Added

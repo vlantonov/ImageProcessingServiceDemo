@@ -56,6 +56,7 @@ Supported image formats: JPEG, PNG, WebP, TIFF — with a configurable maximum u
 - **Connection pooling** with configurable `pool_size` and `max_overflow` parameters, along with `pool_pre_ping` for automatic stale connection recovery.
 - **Strategic indexing**: Indexes on `status`, `created_at`, and a **partial index** on `expires_at` (only for non-null values) to keep retention queries fast without bloating write-heavy paths.
 - **Paginated queries** via offset/limit with total count, avoiding full table scans on large datasets.
+- **Schema migrations** with **Alembic**: versioned, repeatable database schema changes replace the development-only `create_all()` approach. The initial migration is idempotent, enabling seamless upgrades from earlier deployments.
 - **Entity ↔ ORM mapping**: Clean separation between domain entities and SQLAlchemy models, ensuring the domain stays persistence-agnostic.
 
 ### Retention Strategies
@@ -99,6 +100,7 @@ Fast, reliable REST APIs are designed and developed with **FastAPI**:
 ### Docker
 
 - **Multi-stage Dockerfile**: A builder stage installs Python dependencies, and a minimal runtime stage copies only the installed packages and application code — reducing image size and attack surface.
+- **Entrypoint-based migrations**: A dedicated `entrypoint.sh` runs `alembic upgrade head` once before Uvicorn forks workers, ensuring all database migrations are applied atomically on every deployment without multi-worker race conditions.
 - **Security**: The container runs as a non-root user (`appuser`), following container security best practices.
 - **Docker Compose**: Orchestrates the application service and PostgreSQL database with health-check–based startup ordering and named volumes for persistent data.
 
