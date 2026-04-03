@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database.models import Base
 from src.presentation.api.dependencies import get_settings
@@ -89,6 +90,16 @@ def create_app() -> FastAPI:
         instrument_app(app)
 
     app.add_middleware(RequestLoggingMiddleware)
+
+    settings = get_settings()
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=settings.cors_allow_methods,
+            allow_headers=settings.cors_allow_headers,
+        )
 
     app.include_router(health.router)
     app.include_router(images.router)

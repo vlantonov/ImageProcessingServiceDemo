@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     # ── Authentication ───────────────────────────────────────────────────
     api_key: str = ""
 
+    # ── CORS ─────────────────────────────────────────────────────────────
+    cors_origins: list[str] = []
+    cors_allow_methods: list[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    cors_allow_headers: list[str] = ["*"]
+
     # ── Observability ────────────────────────────────────────────────────
     otel_enabled: bool = False
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"

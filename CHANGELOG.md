@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Configurable CORS middleware for browser-based clients. Controlled via
+  `IMG_CORS_ORIGINS`, `IMG_CORS_ALLOW_METHODS`, and `IMG_CORS_ALLOW_HEADERS`
+  environment variables. Disabled by default (empty origins list).
+
 ## [2.1.0] - 2026-04-02
 
 ### Added
