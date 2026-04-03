@@ -108,6 +108,9 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_RATE_LIMIT_PROCESS_WINDOW` | `60` | Process rate limit window (seconds) |
 | `IMG_RATE_LIMIT_READ_MAX` | `60` | Max read requests per window per IP |
 | `IMG_RATE_LIMIT_READ_WINDOW` | `60` | Read rate limit window (seconds) |
+| `IMG_CORS_ORIGINS` | `[]` | Allowed CORS origins (e.g. `["http://localhost:3000"]`; empty = disabled) |
+| `IMG_CORS_ALLOW_METHODS` | `["GET","POST","PUT","DELETE","OPTIONS"]` | Allowed HTTP methods for CORS |
+| `IMG_CORS_ALLOW_HEADERS` | `["*"]` | Allowed headers for CORS |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
 | `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
