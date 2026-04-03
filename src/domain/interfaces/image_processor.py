@@ -21,7 +21,7 @@ class ImageProcessor(ABC):
 
     @abstractmethod
     async def generate_thumbnail(
-        self, image_data: bytes, max_size: tuple[int, int] = (256, 256)
+        self, image_data: bytes, max_size: tuple[int, int] | None = None
     ) -> ProcessingResult: ...
 
     @abstractmethod

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `IMG_THUMBNAIL_MAX_SIZE` config setting is now wired to the image processor.
+  Previously the value was defined but never consumed; thumbnails always used
+  the hardcoded 256 px default regardless of configuration.
+
 ## [2.2.1] - 2026-04-03
 
 ### Changed

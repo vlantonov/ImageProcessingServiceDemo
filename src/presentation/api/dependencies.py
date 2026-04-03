@@ -85,7 +85,12 @@ def _storage() -> LocalImageStorage:
 
 @lru_cache
 def _processor() -> PillowImageProcessor:
-    return PillowImageProcessor(max_workers=get_settings().processing_max_workers)
+    settings = get_settings()
+    max_dim = settings.thumbnail_max_size
+    return PillowImageProcessor(
+        max_workers=settings.processing_max_workers,
+        thumbnail_max_size=(max_dim, max_dim),
+    )
 
 
 _rate_limiters: dict[str, RateLimiter] = {}

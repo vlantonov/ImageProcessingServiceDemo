@@ -78,18 +78,22 @@ def _extract_metadata_sync(data: bytes) -> dict:
 
 
 class PillowImageProcessor(ImageProcessor):
-    def __init__(self, max_workers: int = 4) -> None:
+    def __init__(
+        self, max_workers: int = 4, thumbnail_max_size: tuple[int, int] = (256, 256)
+    ) -> None:
         self._max_workers = max_workers
+        self._thumbnail_max_size = thumbnail_max_size
 
     async def generate_thumbnail(
-        self, image_data: bytes, max_size: tuple[int, int] = (256, 256)
+        self, image_data: bytes, max_size: tuple[int, int] | None = None
     ) -> ProcessingResult:
+        effective_size = max_size if max_size is not None else self._thumbnail_max_size
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             get_executor(self._max_workers),
             _generate_thumbnail_sync,
             image_data,
-            max_size,
+            effective_size,
         )
         return ProcessingResult(**result)
 
