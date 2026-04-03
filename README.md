@@ -33,6 +33,22 @@ docker compose up --build
 # Swagger docs at http://localhost:8000/docs
 ```
 
+The Docker entrypoint runs `alembic upgrade head` before starting Uvicorn,
+so database migrations are applied automatically on every deployment.
+
+### Database Migrations
+
+```bash
+# Create a new migration after modifying models.py
+alembic revision --autogenerate -m "description of change"
+
+# Apply migrations manually (e.g. local dev)
+alembic upgrade head
+
+# Downgrade one revision
+alembic downgrade -1
+```
+
 ### Minikube (Local Kubernetes)
 
 ```bash
@@ -127,6 +143,10 @@ src/
 ├── infrastructure/                    # Adapters (PostgreSQL, Pillow, filesystem)
 │   └── observability/                 # OpenTelemetry setup, metrics, middleware
 └── presentation/                      # FastAPI routes, schemas, middleware
+
+migrations/                            # Alembic database migrations
+├── env.py                             # Async migration environment
+└── versions/                          # Versioned schema change scripts
 
 cpp/                                   # Optional C++ resize module (pybind11)
 k8s/                                   # Kubernetes manifests (Deployment, HPA, PVC, …)
