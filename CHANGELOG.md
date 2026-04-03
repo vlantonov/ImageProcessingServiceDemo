@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-04-03
+
+### Fixed
+
+- `IMG_THUMBNAIL_MAX_SIZE` config setting is now wired to the image processor.
+  Previously the value was defined but never consumed; thumbnails always used
+  the hardcoded 256 px default regardless of configuration.
+- `InMemoryImageCache` now uses `asyncio.Lock` instead of `threading.Lock`,
+  eliminating event-loop blocking under concurrent async access.
+- Executor shutdown during app lifespan is now async with a 30-second timeout.
+  Previously `shutdown(wait=True)` blocked the event loop indefinitely; now
+  in-flight tasks are given time to finish and force-cancelled on timeout.
+
 ## [2.2.1] - 2026-04-03
 
 ### Changed

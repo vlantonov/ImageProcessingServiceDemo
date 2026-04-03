@@ -24,58 +24,58 @@ class TestInMemoryImageCache:
             status=ProcessingStatus.PENDING,
         )
 
-    def test_get_returns_none_for_missing(self):
+    async def test_get_returns_none_for_missing(self):
         cache = InMemoryImageCache(ttl_seconds=60)
-        assert cache.get(uuid.uuid4()) is None
+        assert await cache.get(uuid.uuid4()) is None
 
-    def test_set_and_get(self):
-        cache = InMemoryImageCache(ttl_seconds=60)
-        image = self._make_image()
-        cache.set(image)
-        assert cache.get(image.id) is image
-
-    def test_invalidate(self):
+    async def test_set_and_get(self):
         cache = InMemoryImageCache(ttl_seconds=60)
         image = self._make_image()
-        cache.set(image)
-        cache.invalidate(image.id)
-        assert cache.get(image.id) is None
+        await cache.set(image)
+        assert await cache.get(image.id) is image
 
-    def test_clear(self):
+    async def test_invalidate(self):
+        cache = InMemoryImageCache(ttl_seconds=60)
+        image = self._make_image()
+        await cache.set(image)
+        await cache.invalidate(image.id)
+        assert await cache.get(image.id) is None
+
+    async def test_clear(self):
         cache = InMemoryImageCache(ttl_seconds=60)
         for _ in range(5):
-            cache.set(self._make_image())
-        cache.clear()
+            await cache.set(self._make_image())
+        await cache.clear()
         # All cleared — nothing should be retrievable
-        assert cache.get(uuid.uuid4()) is None
+        assert await cache.get(uuid.uuid4()) is None
 
     @patch("src.infrastructure.cache.in_memory_cache.time.monotonic")
-    def test_expired_entry_returns_none(self, mock_monotonic):
+    async def test_expired_entry_returns_none(self, mock_monotonic):
         mock_monotonic.return_value = 1000.0
         cache = InMemoryImageCache(ttl_seconds=10)
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
 
         # Advance time past TTL
         mock_monotonic.return_value = 1011.0
-        assert cache.get(image.id) is None
+        assert await cache.get(image.id) is None
 
-    def test_max_size_eviction(self):
+    async def test_max_size_eviction(self):
         cache = InMemoryImageCache(ttl_seconds=60, max_size=3)
         images = [self._make_image() for _ in range(4)]
         for img in images:
-            cache.set(img)
+            await cache.set(img)
 
         # Should have at most 3 entries; newest should be present
-        assert cache.get(images[3].id) is images[3]
+        assert await cache.get(images[3].id) is images[3]
 
-    def test_update_existing_does_not_grow(self):
+    async def test_update_existing_does_not_grow(self):
         cache = InMemoryImageCache(ttl_seconds=60, max_size=2)
         image = self._make_image()
-        cache.set(image)
-        cache.set(image)  # re-set same ID
+        await cache.set(image)
+        await cache.set(image)  # re-set same ID
         # Should still work, not evict
-        assert cache.get(image.id) is image
+        assert await cache.get(image.id) is image
 
 
 # ── CachedImageRepository tests ──────────────────────────────────────────────
@@ -121,7 +121,7 @@ class TestCachedImageRepository:
 
     async def test_get_by_id_cache_hit_skips_db(self, cached_repo, inner, cache):
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
 
         result = await cached_repo.get_by_id(image.id)
 
@@ -140,22 +140,22 @@ class TestCachedImageRepository:
 
     async def test_save_invalidates_cache(self, cached_repo, inner, cache):
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
         inner.save.return_value = image
 
         await cached_repo.save(image)
 
         # Cache should be invalidated
-        assert cache.get(image.id) is None
+        assert await cache.get(image.id) is None
         inner.save.assert_awaited_once_with(image)
 
     async def test_delete_invalidates_cache(self, cached_repo, inner, cache):
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
 
         await cached_repo.delete(image.id)
 
-        assert cache.get(image.id) is None
+        assert await cache.get(image.id) is None
         inner.delete.assert_awaited_once_with(image.id)
 
     async def test_list_images_delegates(self, cached_repo, inner):
@@ -168,14 +168,14 @@ class TestCachedImageRepository:
 
     async def test_delete_expired_batch_delegates_and_invalidates(self, cached_repo, inner, cache):
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
         inner.delete_expired_batch.return_value = [image]
 
         result = await cached_repo.delete_expired_batch(batch_size=50)
 
         assert result == [image]
         inner.delete_expired_batch.assert_awaited_once_with(batch_size=50)
-        assert cache.get(image.id) is None
+        assert await cache.get(image.id) is None
 
     async def test_count_delegates(self, cached_repo, inner):
         await cached_repo.count(status="completed")

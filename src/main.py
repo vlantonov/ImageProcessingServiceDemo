@@ -58,9 +58,9 @@ async def lifespan(app: FastAPI):
 
     logger.info("Application startup complete")
     yield
-    from src.infrastructure.processing.pillow_processor import shutdown_executor
+    from src.infrastructure.processing.pillow_processor import async_shutdown_executor
 
-    shutdown_executor()
+    await async_shutdown_executor()
     await engine.dispose()
 
 

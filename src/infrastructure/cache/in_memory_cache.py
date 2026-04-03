@@ -7,10 +7,10 @@ decorator interface.
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 from dataclasses import dataclass, field
-from threading import Lock
 
 from src.domain.entities.image import Image
 
@@ -23,15 +23,15 @@ class _CacheEntry:
 
 @dataclass
 class InMemoryImageCache:
-    """Thread-safe in-memory cache with TTL-based expiration."""
+    """Async-safe in-memory cache with TTL-based expiration."""
 
     ttl_seconds: float = 60.0
     max_size: int = 1024
     _store: dict[uuid.UUID, _CacheEntry] = field(default_factory=dict, repr=False)
-    _lock: Lock = field(default_factory=Lock, repr=False)
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
-    def get(self, image_id: uuid.UUID) -> Image | None:
-        with self._lock:
+    async def get(self, image_id: uuid.UUID) -> Image | None:
+        async with self._lock:
             entry = self._store.get(image_id)
             if entry is None:
                 return None
@@ -40,8 +40,8 @@ class InMemoryImageCache:
                 return None
             return entry.image
 
-    def set(self, image: Image) -> None:
-        with self._lock:
+    async def set(self, image: Image) -> None:
+        async with self._lock:
             if len(self._store) >= self.max_size and image.id not in self._store:
                 self._evict_expired()
                 if len(self._store) >= self.max_size:
@@ -51,12 +51,12 @@ class InMemoryImageCache:
                 expires_at=time.monotonic() + self.ttl_seconds,
             )
 
-    def invalidate(self, image_id: uuid.UUID) -> None:
-        with self._lock:
+    async def invalidate(self, image_id: uuid.UUID) -> None:
+        async with self._lock:
             self._store.pop(image_id, None)
 
-    def clear(self) -> None:
-        with self._lock:
+    async def clear(self) -> None:
+        async with self._lock:
             self._store.clear()
 
     def _evict_expired(self) -> None:
