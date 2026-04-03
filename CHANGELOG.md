@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-04-03
+
 ### Fixed
 
 - `IMG_THUMBNAIL_MAX_SIZE` config setting is now wired to the image processor.
