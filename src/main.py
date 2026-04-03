@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.infrastructure.database.models import Base
 from src.presentation.api.dependencies import get_settings
@@ -20,6 +21,13 @@ def _is_otel_enabled() -> bool:
     import os
 
     return os.getenv("IMG_OTEL_ENABLED", "false").lower() in ("1", "true", "yes")
+
+
+def _is_cors_enabled() -> bool:
+    """Check CORS origins without requiring full Settings (DB creds may be absent)."""
+    import os
+
+    return bool(os.getenv("IMG_CORS_ORIGINS", ""))
 
 
 configure_logging(json_output=_is_otel_enabled())
@@ -89,6 +97,16 @@ def create_app() -> FastAPI:
         instrument_app(app)
 
     app.add_middleware(RequestLoggingMiddleware)
+
+    if _is_cors_enabled():
+        settings = get_settings()
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=True,
+            allow_methods=settings.cors_allow_methods,
+            allow_headers=settings.cors_allow_headers,
+        )
 
     app.include_router(health.router)
     app.include_router(images.router)

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-04-03
+
+### Added
+
+- Configurable CORS middleware for browser-based clients. Controlled via
+  `IMG_CORS_ORIGINS`, `IMG_CORS_ALLOW_METHODS`, and `IMG_CORS_ALLOW_HEADERS`
+  environment variables. Disabled by default (empty origins list).
+
 ## [2.1.0] - 2026-04-02
 
 ### Added
@@ -310,7 +318,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.1.0...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.0...v2.0.1
