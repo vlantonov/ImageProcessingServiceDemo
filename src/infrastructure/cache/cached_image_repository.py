@@ -26,18 +26,18 @@ class CachedImageRepository(ImageRepository):
 
     async def save(self, image: Image) -> Image:
         result = await self._inner.save(image)
-        self._cache.invalidate(image.id)
+        await self._cache.invalidate(image.id)
         return result
 
     async def get_by_id(self, image_id: uuid.UUID) -> Image | None:
-        cached = self._cache.get(image_id)
+        cached = await self._cache.get(image_id)
         if cached is not None:
             logger.debug("Cache hit: image=%s", image_id)
             return cached
         logger.debug("Cache miss: image=%s", image_id)
         image = await self._inner.get_by_id(image_id)
         if image is not None:
-            self._cache.set(image)
+            await self._cache.set(image)
         return image
 
     async def list_images(
@@ -46,7 +46,7 @@ class CachedImageRepository(ImageRepository):
         return await self._inner.list_images(offset=offset, limit=limit, status=status)
 
     async def delete(self, image_id: uuid.UUID) -> bool:
-        self._cache.invalidate(image_id)
+        await self._cache.invalidate(image_id)
         return await self._inner.delete(image_id)
 
     async def get_expired(self, batch_size: int = 100) -> list[Image]:
@@ -55,7 +55,7 @@ class CachedImageRepository(ImageRepository):
     async def delete_expired_batch(self, batch_size: int = 100) -> list[Image]:
         deleted = await self._inner.delete_expired_batch(batch_size=batch_size)
         for image in deleted:
-            self._cache.invalidate(image.id)
+            await self._cache.invalidate(image.id)
         return deleted
 
     async def count(self, *, status: str | None = None) -> int:

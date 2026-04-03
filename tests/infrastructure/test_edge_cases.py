@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import io
-import threading
 import uuid
 from unittest.mock import AsyncMock, patch
 
@@ -156,135 +155,74 @@ class TestCacheConcurrency:
             status=ProcessingStatus.PENDING,
         )
 
-    def test_concurrent_set_and_get(self):
-        """Thread-safe set/get under concurrent access."""
+    async def test_concurrent_set_and_get(self):
+        """Async-safe set/get under concurrent access."""
         cache = InMemoryImageCache(ttl_seconds=60, max_size=100)
         images = [self._make_image() for _ in range(50)]
-        errors: list[Exception] = []
 
-        def writer():
-            try:
-                for img in images:
-                    cache.set(img)
-            except Exception as e:
-                errors.append(e)
+        async def writer():
+            for img in images:
+                await cache.set(img)
 
-        def reader():
-            try:
-                for img in images:
-                    cache.get(img.id)  # May or may not find it
-            except Exception as e:
-                errors.append(e)
+        async def reader():
+            for img in images:
+                await cache.get(img.id)  # May or may not find it
 
-        threads = [
-            threading.Thread(target=writer),
-            threading.Thread(target=reader),
-            threading.Thread(target=writer),
-            threading.Thread(target=reader),
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=5)
+        await asyncio.gather(writer(), reader(), writer(), reader())
 
-        assert not errors
-
-    def test_concurrent_set_and_invalidate(self):
+    async def test_concurrent_set_and_invalidate(self):
         """Concurrent set and invalidate should not corrupt state."""
         cache = InMemoryImageCache(ttl_seconds=60, max_size=100)
         image = self._make_image()
-        errors: list[Exception] = []
 
-        def setter():
-            try:
-                for _ in range(100):
-                    cache.set(image)
-            except Exception as e:
-                errors.append(e)
+        async def setter():
+            for _ in range(100):
+                await cache.set(image)
 
-        def invalidator():
-            try:
-                for _ in range(100):
-                    cache.invalidate(image.id)
-            except Exception as e:
-                errors.append(e)
+        async def invalidator():
+            for _ in range(100):
+                await cache.invalidate(image.id)
 
-        threads = [
-            threading.Thread(target=setter),
-            threading.Thread(target=invalidator),
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=5)
+        await asyncio.gather(setter(), invalidator())
 
-        assert not errors
-
-    def test_concurrent_eviction_under_pressure(self):
-        """Many threads writing to a small cache should not raise."""
+    async def test_concurrent_eviction_under_pressure(self):
+        """Many coroutines writing to a small cache should not raise."""
         cache = InMemoryImageCache(ttl_seconds=60, max_size=5)
-        errors: list[Exception] = []
 
-        def writer():
-            try:
-                for _ in range(50):
-                    cache.set(self._make_image())
-            except Exception as e:
-                errors.append(e)
+        async def writer():
+            for _ in range(50):
+                await cache.set(self._make_image())
 
-        threads = [threading.Thread(target=writer) for _ in range(4)]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=5)
+        await asyncio.gather(*(writer() for _ in range(4)))
 
-        assert not errors
-
-    def test_concurrent_clear(self):
+    async def test_concurrent_clear(self):
         """Concurrent clears and sets should not raise."""
         cache = InMemoryImageCache(ttl_seconds=60, max_size=100)
-        errors: list[Exception] = []
 
-        def writer():
-            try:
-                for _ in range(50):
-                    cache.set(self._make_image())
-            except Exception as e:
-                errors.append(e)
+        async def writer():
+            for _ in range(50):
+                await cache.set(self._make_image())
 
-        def clearer():
-            try:
-                for _ in range(20):
-                    cache.clear()
-            except Exception as e:
-                errors.append(e)
+        async def clearer():
+            for _ in range(20):
+                await cache.clear()
 
-        threads = [
-            threading.Thread(target=writer),
-            threading.Thread(target=clearer),
-            threading.Thread(target=writer),
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join(timeout=5)
-
-        assert not errors
+        await asyncio.gather(writer(), clearer(), writer())
 
     @patch("src.infrastructure.cache.in_memory_cache.time.monotonic")
-    def test_all_entries_expired_eviction(self, mock_monotonic):
+    async def test_all_entries_expired_eviction(self, mock_monotonic):
         """When all entries are expired, _evict_expired clears them all."""
         mock_monotonic.return_value = 1000.0
         cache = InMemoryImageCache(ttl_seconds=5, max_size=3)
         for _ in range(3):
-            cache.set(self._make_image())
+            await cache.set(self._make_image())
 
         mock_monotonic.return_value = 1010.0  # All expired
 
         # This triggers eviction since cache is full
         new_img = self._make_image()
-        cache.set(new_img)
-        assert cache.get(new_img.id) is new_img
+        await cache.set(new_img)
+        assert await cache.get(new_img.id) is new_img
 
 
 # ── CachedImageRepository failure edge cases ────────────────────────────────
@@ -322,14 +260,14 @@ class TestCachedRepositoryFailures:
     async def test_inner_save_raises_cache_retains_stale_entry(self, cached_repo, inner, cache):
         """If inner save raises, cache still has the old entry (invalidation is post-save)."""
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
         inner.save.side_effect = RuntimeError("DB error")
 
         with pytest.raises(RuntimeError):
             await cached_repo.save(image)
 
         # Cache still has old entry because invalidation happens after inner.save
-        assert cache.get(image.id) is image
+        assert await cache.get(image.id) is image
 
     async def test_inner_get_by_id_raises_propagates(self, cached_repo, inner):
         """DB errors on get_by_id should propagate, not be cached."""
@@ -341,14 +279,14 @@ class TestCachedRepositoryFailures:
     async def test_inner_delete_raises_cache_invalidated(self, cached_repo, inner, cache):
         """Cache is invalidated before inner.delete, so entry is gone even if inner raises."""
         image = self._make_image()
-        cache.set(image)
+        await cache.set(image)
         inner.delete.side_effect = RuntimeError("DB error")
 
         with pytest.raises(RuntimeError):
             await cached_repo.delete(image.id)
 
         # Cache was invalidated before the inner call
-        assert cache.get(image.id) is None
+        assert await cache.get(image.id) is None
 
     async def test_concurrent_get_by_id_cache_miss(self, inner, cache):
         """Concurrent get_by_id calls on a cold cache should not error."""
@@ -364,10 +302,10 @@ class TestCachedRepositoryFailures:
         """All returned images should be invalidated from cache."""
         images = [self._make_image() for _ in range(3)]
         for img in images:
-            cache.set(img)
+            await cache.set(img)
         inner.delete_expired_batch.return_value = images
 
         await cached_repo.delete_expired_batch(batch_size=10)
 
         for img in images:
-            assert cache.get(img.id) is None
+            assert await cache.get(img.id) is None
