@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import importlib.metadata
 import logging
 from contextlib import asynccontextmanager
@@ -36,10 +35,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run Alembic migrations on startup, clean up on shutdown."""
-    from alembic import command
-    from alembic.config import Config
+    """Prepare database engine and clean up on shutdown.
 
+    Migrations are handled by the Docker entrypoint (``alembic upgrade head``)
+    before Uvicorn forks workers.
+    """
     from src.infrastructure.database.session import build_engine
 
     settings = get_settings()
@@ -56,10 +56,7 @@ async def lifespan(app: FastAPI):
         instrument_logging()
         logger.info("OpenTelemetry initialized")
 
-    alembic_cfg = Config("alembic.ini")
-    alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
-    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-    logger.info("Database migrations applied")
+    logger.info("Application startup complete")
     yield
     from src.infrastructure.processing.pillow_processor import shutdown_executor
 

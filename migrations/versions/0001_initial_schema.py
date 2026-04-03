@@ -22,7 +22,16 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Create images table with indexes."""
+    """Create images table with indexes.
+
+    Idempotent: skips if the table already exists (e.g. from a prior
+    ``Base.metadata.create_all()`` deployment).
+    """
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    if "images" in inspector.get_table_names():
+        return
+
     op.create_table(
         "images",
         sa.Column("id", sa.UUID(), primary_key=True),

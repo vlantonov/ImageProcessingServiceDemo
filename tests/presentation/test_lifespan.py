@@ -11,7 +11,7 @@ from src.main import lifespan
 
 
 class TestLifespan:
-    async def test_startup_runs_alembic_migrations_and_shutdown_cleans_up(self):
+    async def test_startup_and_shutdown_cleans_up(self):
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         mock_app = MagicMock()
 
@@ -27,13 +27,9 @@ class TestLifespan:
             patch(
                 "src.infrastructure.processing.pillow_processor.shutdown_executor",
             ) as mock_shutdown,
-            patch("alembic.command.upgrade") as mock_upgrade,
         ):
             async with lifespan(mock_app):
-                # Verify Alembic upgrade was called during startup
-                mock_upgrade.assert_called_once()
-                args = mock_upgrade.call_args
-                assert args[0][1] == "head"
+                pass
 
             # After exiting: shutdown_executor was called
             mock_shutdown.assert_called_once()
@@ -59,7 +55,6 @@ class TestLifespan:
             patch(
                 "src.infrastructure.processing.pillow_processor.shutdown_executor",
             ) as mock_shutdown,
-            patch("alembic.command.upgrade"),
             patch.object(AsyncEngine, "dispose", mock_dispose),
         ):
             async with lifespan(mock_app):
@@ -82,11 +77,10 @@ class TestLifespan:
                 return_value=engine,
             ),
             patch("src.infrastructure.processing.pillow_processor.shutdown_executor"),
-            patch("alembic.command.upgrade"),
             caplog.at_level("INFO"),
         ):
             async with lifespan(mock_app):
                 pass
 
-        assert any("Database migrations applied" in msg for msg in caplog.messages)
+        assert any("Application startup complete" in msg for msg in caplog.messages)
         await engine.dispose()
