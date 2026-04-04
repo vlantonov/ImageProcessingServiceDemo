@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-04-04
+
+### Added
+
+- Test coverage for `GetImageUseCase.get_file()` method (all branches).
+- Tests for `_record_upload()` and `_record_duration()` metrics paths in
+  upload and process use cases.
+- Health endpoint tests for database failure and missing storage directory
+  (degraded status).
+- Executor lifecycle tests including `async_shutdown_executor` timeout path
+  and singleton behaviour.
+- Observability tests for `MetricsMiddleware` (skip paths, normal/4xx/exception)
+  and `setup.py` OTel functions (`setup_tracing`, `setup_metrics`,
+  `instrument_logging`).
+- Configuration and main module tests: `Settings.database_url` computed field,
+  `build_engine`/`build_session_factory`, `create_app` with and without CORS,
+  OTel/CORS environment flag helpers, `JSONFormatter`, and cache eviction edge
+  case.
+
 ## [2.2.2] - 2026-04-03
 
 ### Fixed
