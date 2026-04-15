@@ -30,6 +30,10 @@ data:
         metrics_path: /metrics
         static_configs:
           - targets: ["image-service.cv-platform.svc.cluster.local:80"]
+      - job_name: "image-worker"
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["image-worker-metrics.cv-platform.svc.cluster.local:9090"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

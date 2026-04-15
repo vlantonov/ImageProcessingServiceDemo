@@ -1,0 +1,17 @@
+# Headless service to expose worker metrics port for Prometheus scraping
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-worker-metrics
+  namespace: cv-platform
+  labels:
+    app: image-worker
+spec:
+  selector:
+    app: image-worker
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+  clusterIP: None

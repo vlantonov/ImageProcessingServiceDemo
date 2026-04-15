@@ -33,6 +33,20 @@ docker compose up --build
 # Swagger docs at http://localhost:8000/docs
 ```
 
+### Kafka Consumer Worker
+
+When `IMG_BROKER_ENABLED=true`, uploads publish processing tasks to Kafka.
+Run the standalone consumer worker to process them:
+
+```bash
+export IMG_BROKER_ENABLED=true
+export IMG_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+python -m src.worker
+```
+
+Scale horizontally by running multiple worker replicas — they share a Kafka
+consumer group for automatic partition assignment.
+
 The Docker entrypoint runs `alembic upgrade head` before starting Uvicorn,
 so database migrations are applied automatically on every deployment.
 
@@ -68,6 +82,10 @@ minikube service grafana --namespace=observability  # open Grafana
 ```
 
 See [minikube/observability/README.md](minikube/observability/README.md) for dashboards and configuration.
+
+The RED Metrics dashboard includes a **Message Broker** section with panels for
+publish/consume rates, broker errors, consumer processing latency percentiles,
+and running totals. The worker exposes its own Prometheus endpoint on port 9090.
 
 ### Kubernetes (Production)
 
@@ -127,6 +145,10 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_CORS_ORIGINS` | `[]` | Allowed CORS origins (e.g. `["http://localhost:3000"]`; empty = disabled) |
 | `IMG_CORS_ALLOW_METHODS` | `["GET","POST","PUT","DELETE","OPTIONS"]` | Allowed HTTP methods for CORS |
 | `IMG_CORS_ALLOW_HEADERS` | `["*"]` | Allowed headers for CORS |
+| `IMG_BROKER_ENABLED` | `false` | Enable Kafka message broker for async processing |
+| `IMG_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
+| `IMG_KAFKA_CONSUMER_GROUP` | `image-processing` | Kafka consumer group ID |
+| `IMG_WORKER_METRICS_PORT` | `9090` | Prometheus metrics port for the Kafka worker |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
 | `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
@@ -138,9 +160,11 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 src/
 ├── config.py                          # 12-factor configuration
 ├── main.py                            # FastAPI app factory + lifespan
+├── worker.py                          # Standalone Kafka consumer worker
 ├── domain/                            # Entities & ports (zero external deps)
 ├── application/                       # Use cases & DTOs
 ├── infrastructure/                    # Adapters (PostgreSQL, Pillow, filesystem)
+│   ├── messaging/                     # Message broker adapters (Kafka, in-memory)
 │   └── observability/                 # OpenTelemetry setup, metrics, middleware
 └── presentation/                      # FastAPI routes, schemas, middleware
 

@@ -32,13 +32,15 @@ Run the complete image-processing-service on a local Kubernetes cluster.
 4. Enables the metrics-server addon (for HPA)
 5. Applies all Kubernetes manifests in order:
    - Namespace (`cv-platform`)
-   - ConfigMap (env vars)
+   - ConfigMap (env vars incl. Kafka broker settings)
    - PostgreSQL (Deployment + Service + PVC)
+   - Kafka (KRaft single-node Deployment + Service + PVC)
    - Image data PVC
    - Image service Deployment
+   - Image worker Deployment (Kafka consumer)
    - NodePort Service (port 30080)
    - HorizontalPodAutoscaler
-6. Waits for all pods to be ready
+6. Waits for all pods to be ready (PostgreSQL, Kafka, image-service, image-worker)
 7. Prints the service URL
 
 ## What `demo.sh` Exercises
@@ -65,10 +67,15 @@ cv-platform namespace
 ├── postgres (Deployment, 1 replica)
 │   ├── postgres-svc (ClusterIP :5432)
 │   └── postgres-pvc (1Gi)
+├── kafka (Deployment, 1 replica, KRaft mode)
+│   ├── kafka-svc (ClusterIP :9092)
+│   └── kafka-pvc (1Gi)
 ├── image-service (Deployment, 1 replica)
 │   ├── image-service (NodePort :80 → :8000, nodePort 30080)
 │   ├── image-data-pvc (2Gi)
 │   └── image-service-hpa (1–4 replicas, 70% CPU target)
+├── image-worker (Deployment, 1 replica)
+│   └── Kafka consumer processing images from the queue
 ├── image-service-config (ConfigMap)
 └── image-service-db-credentials (Secret)
 ```
@@ -84,6 +91,7 @@ minikube service image-service --namespace=cv-platform
 
 # View pod logs
 kubectl logs -n cv-platform deployment/image-service -f
+kubectl logs -n cv-platform deployment/image-worker -f
 
 # Check HPA status
 kubectl get hpa -n cv-platform -w

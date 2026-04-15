@@ -14,6 +14,7 @@ from src.domain.entities.image import Image, ImageMetadata, ProcessingStatus
 from src.domain.interfaces.image_processor import ImageProcessor, ProcessingResult
 from src.domain.interfaces.image_repository import ImageRepository
 from src.domain.interfaces.image_storage import ImageStorage
+from src.domain.interfaces.message_broker import MessageBroker
 
 
 @pytest.fixture
@@ -92,3 +93,12 @@ def mock_processor() -> ImageProcessor:
         return_value={"width": 100, "height": 80, "format": "PNG"}
     )
     return processor
+
+
+@pytest.fixture
+def mock_broker() -> MessageBroker:
+    broker = AsyncMock(spec=MessageBroker)
+    broker.publish = AsyncMock()
+    broker.consume = AsyncMock(return_value=None)
+    broker.close = AsyncMock()
+    return broker

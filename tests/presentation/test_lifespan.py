@@ -28,6 +28,7 @@ class TestLifespan:
                 "src.infrastructure.processing.pillow_processor.async_shutdown_executor",
                 new_callable=AsyncMock,
             ) as mock_shutdown,
+            patch("src.presentation.api.dependencies._broker", return_value=None),
         ):
             async with lifespan(mock_app):
                 pass
@@ -58,6 +59,7 @@ class TestLifespan:
                 new_callable=AsyncMock,
             ) as mock_shutdown,
             patch.object(AsyncEngine, "dispose", mock_dispose),
+            patch("src.presentation.api.dependencies._broker", return_value=None),
         ):
             async with lifespan(mock_app):
                 pass
@@ -82,6 +84,7 @@ class TestLifespan:
                 "src.infrastructure.processing.pillow_processor.async_shutdown_executor",
                 new_callable=AsyncMock,
             ),
+            patch("src.presentation.api.dependencies._broker", return_value=None),
             caplog.at_level("INFO"),
         ):
             async with lifespan(mock_app):

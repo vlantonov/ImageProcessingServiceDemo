@@ -56,3 +56,30 @@ images_processing = _meter.create_up_down_counter(
     name="images_currently_processing",
     description="Number of images currently being processed",
 )
+
+# ── Message Broker ───────────────────────────────────────────────────────────
+broker_messages_published = _meter.create_counter(
+    name="broker_messages_published_total",
+    description="Total messages published to the message broker",
+)
+
+broker_messages_consumed = _meter.create_counter(
+    name="broker_messages_consumed_total",
+    description="Total messages consumed from the message broker",
+)
+
+broker_publish_errors = _meter.create_counter(
+    name="broker_publish_errors_total",
+    description="Total message publish failures",
+)
+
+broker_consume_errors = _meter.create_counter(
+    name="broker_consume_errors_total",
+    description="Total message consume/processing failures",
+)
+
+broker_consumer_processing_duration = _meter.create_histogram(
+    name="broker_consumer_processing_duration_seconds",
+    description="Time to process a single consumed message end-to-end",
+    unit="s",
+)

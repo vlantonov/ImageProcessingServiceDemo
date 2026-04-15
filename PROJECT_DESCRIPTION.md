@@ -24,8 +24,8 @@ The system is built according to strict **Clean Architecture** principles with f
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-- **Domain Layer** defines pure business entities (`Image`, `RetentionPolicy`) and abstract ports (`ImageProcessor`, `ImageRepository`, `ImageStorage`) with zero external dependencies.
-- **Application Layer** contains use cases (`UploadImage`, `ProcessImage`, `GetImage`, `ListImages`, `ApplyRetention`) that orchestrate domain logic through ports, using frozen dataclass DTOs for data transfer.
+- **Domain Layer** defines pure business entities (`Image`, `RetentionPolicy`) and abstract ports (`ImageProcessor`, `ImageRepository`, `ImageStorage`, `MessageBroker`) with zero external dependencies.
+- **Application Layer** contains use cases (`UploadImage`, `ProcessImage`, `GetImage`, `ListImages`, `ApplyRetention`, `ConsumeProcessingTasks`) that orchestrate domain logic through ports, using frozen dataclass DTOs for data transfer.
 - **Infrastructure Layer** provides concrete adapters: PostgreSQL repository via async SQLAlchemy, Pillow-based image processor with `ProcessPoolExecutor` parallelism, and a local file storage backend.
 - **Presentation Layer** exposes FastAPI routes with Pydantic validation, request logging middleware, and a dedicated dependency injection module that wires infrastructure into use cases.
 
@@ -40,6 +40,7 @@ Each layer depends only inward — infrastructure and presentation never leak in
 The service implements **high-performance pipelines** for processing large amounts of image data:
 
 - **CPU-bound parallelism**: Thumbnail generation and metadata extraction are offloaded to a `ProcessPoolExecutor`, keeping the async event loop fully responsive under heavy load. Pure synchronous Pillow functions run in worker processes while the main thread continues handling requests.
+- **Event-driven processing via message queue**: Image ingestion is decoupled from processing through a `MessageBroker` domain port. When enabled, uploads publish processing tasks to **Apache Kafka**. Standalone consumer workers (`python -m src.worker`) pull tasks from the queue and delegate to the existing `ProcessImageUseCase`. Multiple worker replicas share a Kafka consumer group for automatic partition assignment and horizontal scaling — the production pattern for high-throughput pipelines. An in-memory broker adapter is included for testing and local development without external services.
 - **Bounded batch concurrency**: A batch processing pipeline uses `asyncio.Semaphore` combined with `asyncio.gather` to process multiple images concurrently with a configurable concurrency limit (1–32), preventing resource exhaustion while maximizing throughput.
 - **Non-blocking file I/O**: All storage operations (`store`, `retrieve`, `delete`) use `asyncio.to_thread()` so that disk reads/writes never block the event loop.
 - **Content-addressed storage**: Uploaded files are stored with a SHA256-based filename prefix, enabling deduplication and safe concurrent writes.
@@ -139,7 +140,8 @@ The service is fully instrumented with **OpenTelemetry** for distributed tracing
 - **Duration**: `http_request_duration_seconds` — request latency histogram.
 - **Saturation**: `http_active_requests` — in-flight request gauge.
 - **Image processing**: `image_processing_duration_seconds`, `image_uploads_total`, `images_currently_processing`.
-- Metrics exposed via a Prometheus `/metrics` endpoint, scraped by **Prometheus**.
+- **Message broker**: `broker_messages_published_total`, `broker_messages_consumed_total` (publish/consume throughput by topic), `broker_publish_errors_total`, `broker_consume_errors_total` (error counts by topic and reason), `broker_consumer_processing_duration_seconds` (end-to-end consume-to-process latency histogram).
+- Metrics exposed via a Prometheus `/metrics` endpoint on the API service (port 8000) and the Kafka worker (port 9090), scraped by **Prometheus**.
 
 ### Logging
 
@@ -153,7 +155,7 @@ Three dashboards are provisioned automatically:
 
 | Dashboard | Description |
 |-----------|-------------|
-| **RED Metrics** | Request rate, error rate, latency percentiles, saturation gauges |
+| **RED Metrics** | Request rate, error rate, latency percentiles, saturation gauges, message broker publish/consume rates, broker errors, consumer processing latency |
 | **Traces** | Service map, recent traces with clickable trace IDs, duration distribution |
 | **Logs** | Application logs, log volume by level, error log filter |
 
@@ -188,6 +190,10 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 | `IMG_CORS_ORIGINS` | `[]` | Allowed CORS origins (e.g. `["http://localhost:3000"]`; empty = disabled) |
 | `IMG_CORS_ALLOW_METHODS` | `["GET","POST","PUT","DELETE","OPTIONS"]` | Allowed HTTP methods for CORS |
 | `IMG_CORS_ALLOW_HEADERS` | `["*"]` | Allowed headers for CORS |
+| `IMG_BROKER_ENABLED` | `false` | Enable Kafka message broker for async processing |
+| `IMG_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
+| `IMG_KAFKA_CONSUMER_GROUP` | `image-processing` | Kafka consumer group ID |
+| `IMG_WORKER_METRICS_PORT` | `9090` | Prometheus metrics port for the Kafka worker |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
 | `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
@@ -230,6 +236,7 @@ Test tooling: pytest, pytest-asyncio (auto mode), httpx, aiosqlite (in-memory SQ
 | Async/Await | Entire codebase is asynchronous — non-blocking I/O throughout |
 | ProcessPoolExecutor | CPU-bound image work dispatched to worker processes |
 | Bounded Concurrency | `asyncio.Semaphore` + `asyncio.gather` for batch processing |
+| Event-Driven Processing | Message broker port with Kafka adapter; consumer groups for scaling |
 | Connection Pooling | Async SQLAlchemy pool with configurable size and overflow |
 | Partial Indexes | Database index on `expires_at` for non-null values only |
 | Multi-Stage Docker | Builder/runtime separation for minimal production images |
@@ -249,6 +256,7 @@ Test tooling: pytest, pytest-asyncio (auto mode), httpx, aiosqlite (in-memory SQ
 | **Web Framework** | FastAPI, Uvicorn (ASGI) |
 | **Database** | PostgreSQL 16, SQLAlchemy 2.0 (async), asyncpg |
 | **Image Processing** | Pillow, pybind11 (C++ bridge) |
+| **Messaging** | Apache Kafka (aiokafka), in-memory queue (dev/test) |
 | **Validation** | Pydantic v2, pydantic-settings |
 | **Containerization** | Docker (multi-stage), Docker Compose |
 | **Orchestration** | Kubernetes, Minikube (local demo) |
