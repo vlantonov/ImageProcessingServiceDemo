@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-04-15
+
+### Added
+
+- Message broker abstraction (`MessageBroker` port) in the domain layer for
+  event-driven processing, decoupling image ingestion from processing.
+- Kafka adapter (`KafkaMessageBroker`) using `aiokafka` for production
+  consumer-group-based processing of image tasks.
+- In-memory adapter (`InMemoryMessageBroker`) for testing and local development
+  without external services.
+- `ConsumeProcessingTasksUseCase` for pulling processing tasks from the message
+  queue and delegating to the existing `ProcessImageUseCase`.
+- `UploadImageUseCase` now optionally publishes a processing event to the
+  message broker after persisting, enabling fully async processing.
+- Standalone Kafka consumer worker entrypoint (`python -m src.worker`) for
+  horizontal scaling via consumer groups.
+- Configuration settings: `IMG_BROKER_ENABLED`, `IMG_KAFKA_BOOTSTRAP_SERVERS`,
+  `IMG_KAFKA_CONSUMER_GROUP`.
+- `aiokafka` dependency added to `requirements.txt` and `pyproject.toml`.
+- Tests for `InMemoryMessageBroker`, `ConsumeProcessingTasksUseCase`, and
+  upload-with-broker event publishing.
+- Shared `mock_broker` fixture in `tests/conftest.py`.
+
 ## [2.2.3] - 2026-04-04
 
 ### Added

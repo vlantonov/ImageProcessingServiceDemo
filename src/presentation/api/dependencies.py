@@ -14,11 +14,13 @@ from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader
 
 from src.application.use_cases.apply_retention import ApplyRetentionUseCase
+from src.application.use_cases.consume_processing_tasks import ConsumeProcessingTasksUseCase
 from src.application.use_cases.get_image import GetImageUseCase
 from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
 from src.config import Settings
+from src.domain.interfaces.message_broker import MessageBroker
 from src.infrastructure.cache.cached_image_repository import CachedImageRepository
 from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
 from src.infrastructure.database.postgres_image_repository import PostgresImageRepository
@@ -93,6 +95,19 @@ def _processor() -> PillowImageProcessor:
     )
 
 
+@lru_cache
+def _broker() -> MessageBroker | None:
+    settings = get_settings()
+    if not settings.broker_enabled:
+        return None
+    from src.infrastructure.messaging.kafka_message_broker import KafkaMessageBroker
+
+    return KafkaMessageBroker(
+        bootstrap_servers=settings.kafka_bootstrap_servers,
+        consumer_group=settings.kafka_consumer_group,
+    )
+
+
 _rate_limiters: dict[str, RateLimiter] = {}
 
 
@@ -133,7 +148,7 @@ async def read_rate_limiter(
 
 
 def get_upload_use_case() -> UploadImageUseCase:
-    return UploadImageUseCase(_repository(), _storage())
+    return UploadImageUseCase(_repository(), _storage(), broker=_broker())
 
 
 def get_process_use_case() -> ProcessImageUseCase:
@@ -150,3 +165,15 @@ def get_list_use_case() -> ListImagesUseCase:
 
 def get_retention_use_case() -> ApplyRetentionUseCase:
     return ApplyRetentionUseCase(_repository(), _storage())
+
+
+def get_consume_use_case() -> ConsumeProcessingTasksUseCase:
+    broker = _broker()
+    if broker is None:
+        from src.infrastructure.messaging.in_memory_message_broker import InMemoryMessageBroker
+
+        broker = InMemoryMessageBroker()
+    return ConsumeProcessingTasksUseCase(
+        broker=broker,
+        process_use_case=get_process_use_case(),
+    )

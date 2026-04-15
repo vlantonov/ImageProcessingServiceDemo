@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # ── Retention ────────────────────────────────────────────────────────
     retention_batch_size: int = 100
 
+    # ── Message Broker ───────────────────────────────────────────────────
+    broker_enabled: bool = False
+    kafka_bootstrap_servers: str = "localhost:9092"
+    kafka_consumer_group: str = "image-processing"
+
     # ── Rate Limiting ────────────────────────────────────────────────────
     rate_limit_upload_max: int = 10
     rate_limit_upload_window: int = 60

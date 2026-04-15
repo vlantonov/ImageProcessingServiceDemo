@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import UTC, datetime, timedelta
 
@@ -9,14 +10,23 @@ from src.application.dto.image_dto import ImageResponse
 from src.domain.entities.image import Image
 from src.domain.interfaces.image_repository import ImageRepository
 from src.domain.interfaces.image_storage import ImageStorage
+from src.domain.interfaces.message_broker import Message, MessageBroker
 
 logger = logging.getLogger(__name__)
 
+IMAGE_PROCESSING_TOPIC = "image.processing"
+
 
 class UploadImageUseCase:
-    def __init__(self, repository: ImageRepository, storage: ImageStorage) -> None:
+    def __init__(
+        self,
+        repository: ImageRepository,
+        storage: ImageStorage,
+        broker: MessageBroker | None = None,
+    ) -> None:
         self._repository = repository
         self._storage = storage
+        self._broker = broker
 
     async def execute(
         self,
@@ -41,6 +51,17 @@ class UploadImageUseCase:
         saved = await self._repository.save(image)
         logger.info("Image persisted: id=%s filename=%s path=%s", saved.id, filename, storage_path)
         self._record_upload()
+
+        if self._broker is not None:
+            await self._broker.publish(
+                Message(
+                    topic=IMAGE_PROCESSING_TOPIC,
+                    key=str(saved.id),
+                    value=json.dumps({"image_id": str(saved.id)}).encode(),
+                )
+            )
+            logger.info("Processing task published for image %s", saved.id)
+
         return _to_response(saved)
 
     @staticmethod
