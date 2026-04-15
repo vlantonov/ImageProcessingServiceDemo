@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import signal
 
 from src.application.use_cases.consume_processing_tasks import (
@@ -31,10 +32,28 @@ from src.presentation.logging_config import configure_logging
 
 logger = logging.getLogger(__name__)
 
+WORKER_METRICS_PORT = int(os.environ.get("IMG_WORKER_METRICS_PORT", "9090"))
+
+
+def _setup_otel(settings: Settings) -> None:
+    """Initialise OTel metrics so broker counters are exported via Prometheus."""
+    otel_enabled = os.environ.get("IMG_OTEL_ENABLED", "").lower() in ("1", "true", "yes")
+    if not otel_enabled:
+        return
+    from prometheus_client import start_http_server
+
+    from src.infrastructure.observability.setup import setup_metrics
+
+    service_name = os.environ.get("IMG_OTEL_SERVICE_NAME", "image-worker")
+    setup_metrics(service_name=service_name)
+    start_http_server(WORKER_METRICS_PORT)
+    logger.info("Worker metrics server started on port %d", WORKER_METRICS_PORT)
+
 
 async def run_worker() -> None:
     settings = Settings()  # type: ignore[call-arg]
     configure_logging(json_output=False)
+    _setup_otel(settings)
 
     engine = build_engine(settings)
     session_factory = build_session_factory(engine)

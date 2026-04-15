@@ -15,6 +15,10 @@ spec:
     metadata:
       labels:
         app: image-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -28,6 +32,9 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
           command: ["python", "-m", "src.worker"]
+          ports:
+            - containerPort: 9090
+              name: metrics
           envFrom:
             - configMapRef:
                 name: image-service-config

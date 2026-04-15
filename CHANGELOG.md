@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests for `InMemoryMessageBroker`, `ConsumeProcessingTasksUseCase`, and
   upload-with-broker event publishing.
 - Shared `mock_broker` fixture in `tests/conftest.py`.
+- OpenTelemetry metrics for message broker operations: `broker_messages_published_total`,
+  `broker_messages_consumed_total`, `broker_publish_errors_total`,
+  `broker_consume_errors_total`, and `broker_consumer_processing_duration_seconds`.
+- Publish and consume use cases instrumented with broker metrics (counters,
+  error counters, and processing-duration histogram).
+- Tests for all broker metrics recording paths (publish and consume).
 
 ## [2.2.3] - 2026-04-04
 

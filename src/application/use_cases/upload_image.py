@@ -53,14 +53,19 @@ class UploadImageUseCase:
         self._record_upload()
 
         if self._broker is not None:
-            await self._broker.publish(
-                Message(
-                    topic=IMAGE_PROCESSING_TOPIC,
-                    key=str(saved.id),
-                    value=json.dumps({"image_id": str(saved.id)}).encode(),
+            try:
+                await self._broker.publish(
+                    Message(
+                        topic=IMAGE_PROCESSING_TOPIC,
+                        key=str(saved.id),
+                        value=json.dumps({"image_id": str(saved.id)}).encode(),
+                    )
                 )
-            )
-            logger.info("Processing task published for image %s", saved.id)
+                self._record_publish(IMAGE_PROCESSING_TOPIC)
+                logger.info("Processing task published for image %s", saved.id)
+            except Exception:
+                self._record_publish_error(IMAGE_PROCESSING_TOPIC)
+                logger.exception("Failed to publish processing task for image %s", saved.id)
 
         return _to_response(saved)
 
@@ -70,6 +75,24 @@ class UploadImageUseCase:
             from src.infrastructure.observability.metrics import image_uploads_total
 
             image_uploads_total.add(1)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _record_publish(topic: str) -> None:
+        try:
+            from src.infrastructure.observability.metrics import broker_messages_published
+
+            broker_messages_published.add(1, {"topic": topic})
+        except Exception:
+            pass
+
+    @staticmethod
+    def _record_publish_error(topic: str) -> None:
+        try:
+            from src.infrastructure.observability.metrics import broker_publish_errors
+
+            broker_publish_errors.add(1, {"topic": topic})
         except Exception:
             pass
 
