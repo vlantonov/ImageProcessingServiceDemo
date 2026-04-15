@@ -158,15 +158,122 @@
           "max": 100
         }
       }
+    },
+    {
+      "title": "--- Message Broker ---",
+      "type": "text",
+      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 24 },
+      "options": {
+        "mode": "markdown",
+        "content": "## Message Broker (Kafka)"
+      }
+    },
+    {
+      "title": "Publish Rate (msg/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(broker_messages_published_total[5m])) by (topic)",
+          "legendFormat": "published — {{topic}}"
+        },
+        {
+          "expr": "sum(rate(broker_messages_consumed_total[5m])) by (topic)",
+          "legendFormat": "consumed — {{topic}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "msg/s",
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
+        }
+      }
+    },
+    {
+      "title": "Broker Errors (errors/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(broker_publish_errors_total[5m])) by (topic)",
+          "legendFormat": "publish error — {{topic}}"
+        },
+        {
+          "expr": "sum(rate(broker_consume_errors_total[5m])) by (topic, reason)",
+          "legendFormat": "consume error — {{topic}} ({{reason}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "errors/s",
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 },
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "title": "Consumer Processing Latency (p50 / p90 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(broker_consumer_processing_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum(rate(broker_consumer_processing_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p90"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(broker_consumer_processing_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
+        }
+      }
+    },
+    {
+      "title": "Broker Totals",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(broker_messages_published_total)",
+          "legendFormat": "Published"
+        },
+        {
+          "expr": "sum(broker_messages_consumed_total)",
+          "legendFormat": "Consumed"
+        },
+        {
+          "expr": "sum(broker_publish_errors_total)",
+          "legendFormat": "Publish Errors"
+        },
+        {
+          "expr": "sum(broker_consume_errors_total)",
+          "legendFormat": "Consume Errors"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["image-service", "RED", "metrics"],
+  "tags": ["image-service", "RED", "metrics", "kafka"],
   "templating": {
     "list": []
   },
   "time": { "from": "now-1h", "to": "now" },
   "title": "Image Service - RED Metrics",
   "uid": "image-service-red",
-  "version": 1
+  "version": 2
 }
