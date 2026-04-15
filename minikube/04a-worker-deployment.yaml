@@ -1,0 +1,53 @@
+# Kafka consumer worker — processes images from the message queue
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-worker
+  namespace: cv-platform
+  labels:
+    app: image-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-worker
+  template:
+    metadata:
+      labels:
+        app: image-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+      containers:
+        - name: image-worker
+          image: image-service:latest
+          imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          command: ["python", "-m", "src.worker"]
+          envFrom:
+            - configMapRef:
+                name: image-service-config
+            - secretRef:
+                name: image-service-db-credentials
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          volumeMounts:
+            - name: image-data
+              mountPath: /data/images
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: image-data
+          persistentVolumeClaim:
+            claimName: image-data-pvc
+        - name: tmp
+          emptyDir: {}

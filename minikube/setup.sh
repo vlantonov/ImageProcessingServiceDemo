@@ -59,8 +59,10 @@ kubectl apply -f "$SCRIPT_DIR/00-namespace.yaml"
 kubectl apply -f "$SCRIPT_DIR/01-configmap.yaml"
 kubectl apply -f "$SCRIPT_DIR/01a-secret.yaml"
 kubectl apply -f "$SCRIPT_DIR/02-postgres.yaml"
+kubectl apply -f "$SCRIPT_DIR/02a-kafka.yaml"
 kubectl apply -f "$SCRIPT_DIR/03-pvc.yaml"
 kubectl apply -f "$SCRIPT_DIR/04-deployment.yaml"
+kubectl apply -f "$SCRIPT_DIR/04a-worker-deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/05-service.yaml"
 kubectl apply -f "$SCRIPT_DIR/06-hpa.yaml"
 ok "All manifests applied"
@@ -73,7 +75,15 @@ kubectl wait --namespace=cv-platform \
     --timeout=120s
 ok "PostgreSQL is ready"
 
-# ── 7. Wait for the image-service to be ready ────────────────────────────────
+# ── 7. Wait for Kafka to be ready ────────────────────────────────────────────
+info "Waiting for Kafka pod to be ready (timeout 180s)..."
+kubectl wait --namespace=cv-platform \
+    --for=condition=ready pod \
+    --selector=app=kafka \
+    --timeout=180s
+ok "Kafka is ready"
+
+# ── 8. Wait for the image-service to be ready ────────────────────────────────
 info "Waiting for image-service pod to be ready (timeout 180s)..."
 kubectl wait --namespace=cv-platform \
     --for=condition=ready pod \
@@ -81,7 +91,15 @@ kubectl wait --namespace=cv-platform \
     --timeout=180s
 ok "image-service is ready"
 
-# ── 8. Print service URL ─────────────────────────────────────────────────────
+# ── 9. Wait for the image-worker to be ready ─────────────────────────────────
+info "Waiting for image-worker pod to be ready (timeout 180s)..."
+kubectl wait --namespace=cv-platform \
+    --for=condition=ready pod \
+    --selector=app=image-worker \
+    --timeout=180s
+ok "image-worker is ready"
+
+# ── 10. Print service URL ────────────────────────────────────────────────────
 SERVICE_URL=$(minikube service image-service --namespace=cv-platform --url 2>/dev/null || true)
 
 echo ""
