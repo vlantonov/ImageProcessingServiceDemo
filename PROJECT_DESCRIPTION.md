@@ -140,7 +140,8 @@ The service is fully instrumented with **OpenTelemetry** for distributed tracing
 - **Duration**: `http_request_duration_seconds` — request latency histogram.
 - **Saturation**: `http_active_requests` — in-flight request gauge.
 - **Image processing**: `image_processing_duration_seconds`, `image_uploads_total`, `images_currently_processing`.
-- Metrics exposed via a Prometheus `/metrics` endpoint, scraped by **Prometheus**.
+- **Message broker**: `broker_messages_published_total`, `broker_messages_consumed_total` (publish/consume throughput by topic), `broker_publish_errors_total`, `broker_consume_errors_total` (error counts by topic and reason), `broker_consumer_processing_duration_seconds` (end-to-end consume-to-process latency histogram).
+- Metrics exposed via a Prometheus `/metrics` endpoint on the API service (port 8000) and the Kafka worker (port 9090), scraped by **Prometheus**.
 
 ### Logging
 
@@ -154,7 +155,7 @@ Three dashboards are provisioned automatically:
 
 | Dashboard | Description |
 |-----------|-------------|
-| **RED Metrics** | Request rate, error rate, latency percentiles, saturation gauges |
+| **RED Metrics** | Request rate, error rate, latency percentiles, saturation gauges, message broker publish/consume rates, broker errors, consumer processing latency |
 | **Traces** | Service map, recent traces with clickable trace IDs, duration distribution |
 | **Logs** | Application logs, log volume by level, error log filter |
 
@@ -192,6 +193,7 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 | `IMG_BROKER_ENABLED` | `false` | Enable Kafka message broker for async processing |
 | `IMG_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
 | `IMG_KAFKA_CONSUMER_GROUP` | `image-processing` | Kafka consumer group ID |
+| `IMG_WORKER_METRICS_PORT` | `9090` | Prometheus metrics port for the Kafka worker |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
 | `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |

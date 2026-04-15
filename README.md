@@ -83,6 +83,10 @@ minikube service grafana --namespace=observability  # open Grafana
 
 See [minikube/observability/README.md](minikube/observability/README.md) for dashboards and configuration.
 
+The RED Metrics dashboard includes a **Message Broker** section with panels for
+publish/consume rates, broker errors, consumer processing latency percentiles,
+and running totals. The worker exposes its own Prometheus endpoint on port 9090.
+
 ### Kubernetes (Production)
 
 ```bash
@@ -144,6 +148,7 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_BROKER_ENABLED` | `false` | Enable Kafka message broker for async processing |
 | `IMG_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
 | `IMG_KAFKA_CONSUMER_GROUP` | `image-processing` | Kafka consumer group ID |
+| `IMG_WORKER_METRICS_PORT` | `9090` | Prometheus metrics port for the Kafka worker |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
 | `IMG_OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP gRPC endpoint for trace export |
