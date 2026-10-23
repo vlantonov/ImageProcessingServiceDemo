@@ -14,6 +14,9 @@ services:
       IMG_BROKER_ENABLED: "true"
       IMG_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       IMG_KAFKA_CONSUMER_GROUP: "image-processing"
+      IMG_KAFKA_RETRY_MAX_ATTEMPTS: "3"
+      IMG_KAFKA_RETRY_BACKOFF_SECONDS: "1.0"
+      IMG_KAFKA_DLQ_TOPIC: "image.processing.dlq"
       IMG_DEBUG: "true"
     volumes:
       - image_data:/data/images
@@ -37,6 +40,9 @@ services:
       IMG_BROKER_ENABLED: "true"
       IMG_KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       IMG_KAFKA_CONSUMER_GROUP: "image-processing"
+      IMG_KAFKA_RETRY_MAX_ATTEMPTS: "3"
+      IMG_KAFKA_RETRY_BACKOFF_SECONDS: "1.0"
+      IMG_KAFKA_DLQ_TOPIC: "image.processing.dlq"
       IMG_DEBUG: "true"
     volumes:
       - image_data:/data/images

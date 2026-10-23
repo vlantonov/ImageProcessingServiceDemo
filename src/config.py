@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     broker_enabled: bool = False
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_consumer_group: str = "image-processing"
+    kafka_retry_max_attempts: int = 3
+    kafka_retry_backoff_seconds: float = 1.0
+    kafka_dlq_topic: str = "image.processing.dlq"
 
     # ── Rate Limiting ────────────────────────────────────────────────────
     rate_limit_upload_max: int = 10

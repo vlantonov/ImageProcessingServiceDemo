@@ -168,6 +168,7 @@ def get_retention_use_case() -> ApplyRetentionUseCase:
 
 
 def get_consume_use_case() -> ConsumeProcessingTasksUseCase:
+    settings = get_settings()
     broker = _broker()
     if broker is None:
         from src.infrastructure.messaging.in_memory_message_broker import InMemoryMessageBroker
@@ -176,4 +177,7 @@ def get_consume_use_case() -> ConsumeProcessingTasksUseCase:
     return ConsumeProcessingTasksUseCase(
         broker=broker,
         process_use_case=get_process_use_case(),
+        retry_max_attempts=settings.kafka_retry_max_attempts,
+        retry_backoff_seconds=settings.kafka_retry_backoff_seconds,
+        dlq_topic=settings.kafka_dlq_topic,
     )

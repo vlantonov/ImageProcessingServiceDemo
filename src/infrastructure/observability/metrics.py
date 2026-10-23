@@ -68,6 +68,16 @@ broker_messages_consumed = _meter.create_counter(
     description="Total messages consumed from the message broker",
 )
 
+broker_messages_retried = _meter.create_counter(
+    name="broker_messages_retried_total",
+    description="Total messages republished for retry",
+)
+
+broker_messages_dead_lettered = _meter.create_counter(
+    name="broker_messages_dead_lettered_total",
+    description="Total messages routed to the dead-letter topic",
+)
+
 broker_publish_errors = _meter.create_counter(
     name="broker_publish_errors_total",
     description="Total message publish failures",

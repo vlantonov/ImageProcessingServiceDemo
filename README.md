@@ -47,6 +47,38 @@ python -m src.worker
 Scale horizontally by running multiple worker replicas — they share a Kafka
 consumer group for automatic partition assignment.
 
+Replay failed DLQ messages back to the processing topic:
+
+```bash
+python -m src.dlq_replay --limit 100
+```
+
+### Kafka Retry + Dead-Letter Policy
+
+The worker applies a retry policy when image processing fails:
+
+- Message format includes an `attempt` field (defaults to `0` if missing).
+- Failures are retried by republishing to `image.processing` with
+  exponentially increasing delay:
+  `delay = IMG_KAFKA_RETRY_BACKOFF_SECONDS * 2^(attempt)`.
+- Once `attempt` reaches `IMG_KAFKA_RETRY_MAX_ATTEMPTS`, the message is moved
+  to the DLQ topic (`IMG_KAFKA_DLQ_TOPIC`).
+- Malformed payloads (invalid JSON or missing/invalid `image_id`) are sent to
+  DLQ immediately without retry.
+
+DLQ payload includes metadata (`reason`, `error`, original key/value, and
+timestamp) to simplify operational triage and replay tooling.
+
+DLQ replay helper options:
+
+- `--limit`: max DLQ records to inspect in one run.
+- `--dry-run`: validate replayable records without publishing or committing offsets.
+- `--source-topic`: override DLQ topic (defaults to `IMG_KAFKA_DLQ_TOPIC`).
+- `--target-topic`: replay destination topic (defaults to `image.processing`).
+- `--consumer-group`: override replay consumer group (default:
+  `<IMG_KAFKA_CONSUMER_GROUP>-dlq-replay`).
+- `--poll-timeout-ms`: idle poll timeout before exit.
+
 The Docker entrypoint runs `alembic upgrade head` before starting Uvicorn,
 so database migrations are applied automatically on every deployment.
 
@@ -148,6 +180,9 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_BROKER_ENABLED` | `false` | Enable Kafka message broker for async processing |
 | `IMG_KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka bootstrap servers |
 | `IMG_KAFKA_CONSUMER_GROUP` | `image-processing` | Kafka consumer group ID |
+| `IMG_KAFKA_RETRY_MAX_ATTEMPTS` | `3` | Max processing retries before routing to DLQ |
+| `IMG_KAFKA_RETRY_BACKOFF_SECONDS` | `1.0` | Retry backoff base used for exponential delay |
+| `IMG_KAFKA_DLQ_TOPIC` | `image.processing.dlq` | Kafka dead-letter topic for terminal failures |
 | `IMG_WORKER_METRICS_PORT` | `9090` | Prometheus metrics port for the Kafka worker |
 | `IMG_DEBUG` | `false` | Enable debug logging |
 | `IMG_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
@@ -159,6 +194,7 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 ```
 src/
 ├── config.py                          # 12-factor configuration
+├── dlq_replay.py                      # DLQ replay helper command
 ├── main.py                            # FastAPI app factory + lifespan
 ├── worker.py                          # Standalone Kafka consumer worker
 ├── domain/                            # Entities & ports (zero external deps)
@@ -186,4 +222,3 @@ pytest tests/ -v
 ```
 
 All tests pass without external services — domain tests are pure unit tests, application tests use mocked ports, infrastructure tests use real Pillow/filesystem I/O, and API tests use FastAPI `TestClient` with dependency overrides.
-

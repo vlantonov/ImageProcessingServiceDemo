@@ -76,3 +76,33 @@ class TestConsumeMetrics:
             side_effect=RuntimeError("no OTel"),
         ):
             ConsumeProcessingTasksUseCase._record_processing_duration(0.42, "image.processing")
+
+    async def test_record_retried_calls_counter(self):
+        with patch("src.infrastructure.observability.metrics.broker_messages_retried") as m:
+            ConsumeProcessingTasksUseCase._record_retried("image.processing")
+            m.add.assert_called_once_with(1, {"topic": "image.processing"})
+
+    async def test_record_retried_swallows_error(self):
+        with patch(
+            "src.infrastructure.observability.metrics.broker_messages_retried",
+            side_effect=RuntimeError("no OTel"),
+        ):
+            ConsumeProcessingTasksUseCase._record_retried("image.processing")
+
+    async def test_record_dead_letter_calls_counter(self):
+        with patch("src.infrastructure.observability.metrics.broker_messages_dead_lettered") as m:
+            ConsumeProcessingTasksUseCase._record_dead_letter(
+                "image.processing.dlq", reason="retries_exhausted"
+            )
+            m.add.assert_called_once_with(
+                1, {"topic": "image.processing.dlq", "reason": "retries_exhausted"}
+            )
+
+    async def test_record_dead_letter_swallows_error(self):
+        with patch(
+            "src.infrastructure.observability.metrics.broker_messages_dead_lettered",
+            side_effect=RuntimeError("no OTel"),
+        ):
+            ConsumeProcessingTasksUseCase._record_dead_letter(
+                "image.processing.dlq", reason="malformed"
+            )

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Kafka consumer retry + dead-letter handling in `ConsumeProcessingTasksUseCase`:
+  processing failures are retried with exponential backoff and routed to a
+  DLQ topic after max attempts; malformed messages are dead-lettered
+  immediately.
+- New broker configuration settings:
+  `IMG_KAFKA_RETRY_MAX_ATTEMPTS`, `IMG_KAFKA_RETRY_BACKOFF_SECONDS`,
+  `IMG_KAFKA_DLQ_TOPIC`.
+- New OpenTelemetry broker counters:
+  `broker_messages_retried_total` and `broker_messages_dead_lettered_total`.
+- Unit tests for retry republish flow, retries-exhausted DLQ flow, malformed
+  payload DLQ flow, and new retry/DLQ metrics hooks.
+- Added a DLQ replay helper command (`python -m src.dlq_replay`) to consume
+  dead-letter messages and republish valid tasks to the processing topic, with
+  dry-run mode and replay limits.
+
 ## [2.3.0] - 2026-04-15
 
 ### Added
