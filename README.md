@@ -120,7 +120,8 @@ See [minikube/observability/README.md](minikube/observability/README.md) for das
 
 The RED Metrics dashboard includes a **Message Broker** section with panels for
 publish/consume rates, broker errors, consumer processing latency percentiles,
-and running totals. The worker exposes its own Prometheus endpoint on port 9090.
+running totals, consumer lag, and rebalance activity. The worker exposes its
+own Prometheus endpoint on port 9090.
 
 ### Kubernetes (Production)
 

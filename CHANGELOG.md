@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dry-run mode and replay limits.
 - Documented Kafka pipeline delivery semantics as at-least-once (not
   exactly-once), including duplicate-processing expectations.
+- Added Kafka consumer observability for lag and rebalance events, and
+  extended the RED Grafana dashboard with dedicated consumer lag/rebalancing
+  panels.
 
 ## [2.3.0] - 2026-04-15
 
