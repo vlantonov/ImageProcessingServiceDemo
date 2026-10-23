@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Kafka consumer observability for lag and rebalance events, and
   extended the RED Grafana dashboard with dedicated consumer lag/rebalancing
   panels.
+- Added a Kafka topology diagram in the README for the async processing path
+  (upload API → `image.processing` topic → worker → PostgreSQL).
 
 ## [2.3.0] - 2026-04-15
 

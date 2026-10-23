@@ -47,6 +47,15 @@ python -m src.worker
 Scale horizontally by running multiple worker replicas — they share a Kafka
 consumer group for automatic partition assignment.
 
+Kafka processing topology:
+
+```mermaid
+flowchart LR
+    A[Upload API<br/>POST /api/v1/images] --> B[(Kafka topic:<br/>image.processing)]
+    B --> C[Worker<br/>python -m src.worker]
+    C --> D[(PostgreSQL<br/>images table)]
+```
+
 Replay failed DLQ messages back to the processing topic:
 
 ```bash
