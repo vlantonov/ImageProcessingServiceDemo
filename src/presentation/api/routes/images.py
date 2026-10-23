@@ -6,9 +6,13 @@ import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, UploadFile, status
 
 from src.application.use_cases.get_image import GetImageUseCase
+from src.application.use_cases.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyInProgressError,
+)
 from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
@@ -41,6 +45,7 @@ router = APIRouter(
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/tiff"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
 MAX_TAGS = 20
+MAX_IDEMPOTENCY_KEY_LENGTH = 255
 
 
 @router.post("/", response_model=ImageOut, status_code=status.HTTP_201_CREATED)
@@ -48,6 +53,10 @@ async def upload_image(
     file: UploadFile,
     tags: Annotated[list[str] | None, Query()] = None,
     ttl_hours: Annotated[int | None, Query(ge=1, le=8760)] = None,
+    idempotency_key: Annotated[
+        str | None,
+        Header(alias="Idempotency-Key", min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH),
+    ] = None,
     use_case: Annotated[UploadImageUseCase, Depends(get_upload_use_case)] = None,  # type: ignore[assignment]
     _rate: Annotated[None, Depends(upload_rate_limiter)] = None,
 ):
@@ -81,12 +90,24 @@ async def upload_image(
             detail=f"Image validation failed: {exc}",
         ) from exc
     safe_filename = sanitize_filename(file.filename or "unnamed")
-    result = await use_case.execute(
-        filename=safe_filename,
-        data=data,
-        tags=tags,
-        ttl_hours=ttl_hours,
-    )
+    try:
+        result = await use_case.execute(
+            filename=safe_filename,
+            data=data,
+            tags=tags,
+            ttl_hours=ttl_hours,
+            idempotency_key=idempotency_key,
+        )
+    except IdempotencyInProgressError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     logger.info("Image uploaded: id=%s filename=%s size=%d", result.id, safe_filename, len(data))
     return result
 
@@ -142,11 +163,26 @@ async def process_batch_images(
 @router.post("/{image_id}/process", response_model=ImageOut)
 async def process_single_image(
     image_id: uuid.UUID,
+    idempotency_key: Annotated[
+        str | None,
+        Header(alias="Idempotency-Key", min_length=1, max_length=MAX_IDEMPOTENCY_KEY_LENGTH),
+    ] = None,
     process_uc: Annotated[ProcessImageUseCase, Depends(get_process_use_case)] = None,  # type: ignore[assignment]
     get_uc: Annotated[GetImageUseCase, Depends(get_get_image_use_case)] = None,  # type: ignore[assignment]
     _rate: Annotated[None, Depends(process_rate_limiter)] = None,
 ):
-    ok = await process_uc.execute(image_id)
+    try:
+        ok = await process_uc.execute(image_id, idempotency_key=idempotency_key)
+    except IdempotencyInProgressError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except IdempotencyConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     if not ok:
         logger.info("Process requested for unknown image: %s", image_id)
         raise HTTPException(status_code=404, detail="Image not found")

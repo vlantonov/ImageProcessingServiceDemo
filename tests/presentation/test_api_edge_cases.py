@@ -16,12 +16,17 @@ from PIL import Image as PILImage
 from src.application.dto.image_dto import ImageListResponse, ImageResponse
 from src.application.use_cases.apply_retention import ApplyRetentionUseCase, RetentionResult
 from src.application.use_cases.get_image import GetImageUseCase
+from src.application.use_cases.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyInProgressError,
+)
 from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
 from src.config import Settings
 from src.main import app
 from src.presentation.api.dependencies import (
+    _rate_limiters,
     get_get_image_use_case,
     get_list_use_case,
     get_process_use_case,
@@ -78,6 +83,7 @@ def make_client(
         yield
 
     app.router.lifespan_context = _noop_lifespan
+    _rate_limiters.clear()
 
     if mock_upload:
         app.dependency_overrides[get_upload_use_case] = lambda: mock_upload
@@ -104,6 +110,7 @@ def make_client(
         yield TestClient(app, raise_server_exceptions=False)
 
     app.dependency_overrides.clear()
+    _rate_limiters.clear()
 
 
 # ── Upload failure edge cases ────────────────────────────────────────────────
@@ -166,6 +173,47 @@ class TestUploadEdgeCases:
             )
             assert resp.status_code == 500
 
+    def test_upload_idempotency_in_progress_returns_409(self, tmp_path, png_upload_bytes):
+        mock_upload = AsyncMock(spec=UploadImageUseCase)
+        mock_upload.execute = AsyncMock(
+            side_effect=IdempotencyInProgressError(
+                "Upload with this Idempotency-Key is in progress"
+            )
+        )
+        with make_client(mock_upload=mock_upload, tmp_path=tmp_path) as client:
+            resp = client.post(
+                "/api/v1/images/",
+                files={"file": ("test.png", png_upload_bytes, "image/png")},
+                headers={"Idempotency-Key": "upload-key-1"},
+            )
+            assert resp.status_code == 409
+
+    def test_upload_idempotency_conflict_returns_409(self, tmp_path, png_upload_bytes):
+        mock_upload = AsyncMock(spec=UploadImageUseCase)
+        mock_upload.execute = AsyncMock(
+            side_effect=IdempotencyConflictError("Idempotency-Key reuse with different payload")
+        )
+        with make_client(mock_upload=mock_upload, tmp_path=tmp_path) as client:
+            resp = client.post(
+                "/api/v1/images/",
+                files={"file": ("test.png", png_upload_bytes, "image/png")},
+                headers={"Idempotency-Key": "upload-key-2"},
+            )
+            assert resp.status_code == 409
+
+    def test_upload_idempotency_key_is_forwarded(self, image_response, tmp_path, png_upload_bytes):
+        mock_upload = AsyncMock(spec=UploadImageUseCase)
+        mock_upload.execute = AsyncMock(return_value=image_response)
+        with make_client(mock_upload=mock_upload, tmp_path=tmp_path) as client:
+            resp = client.post(
+                "/api/v1/images/",
+                files={"file": ("test.png", png_upload_bytes, "image/png")},
+                headers={"Idempotency-Key": "upload-key-forward"},
+            )
+            assert resp.status_code == 201
+        _, kwargs = mock_upload.execute.await_args
+        assert kwargs["idempotency_key"] == "upload-key-forward"
+
 
 # ── Get / Download failure edge cases ────────────────────────────────────────
 
@@ -221,6 +269,37 @@ class TestProcessEdgeCases:
         with make_client(mock_process=mock_process, mock_get=mock_get, tmp_path=tmp_path) as client:
             resp = client.post(f"/api/v1/images/{uuid.uuid4()}/process")
             assert resp.status_code == 500
+
+    def test_process_idempotency_in_progress_returns_409(self, image_response, tmp_path):
+        mock_process = AsyncMock(spec=ProcessImageUseCase)
+        mock_process.execute = AsyncMock(
+            side_effect=IdempotencyInProgressError(
+                "Processing with this Idempotency-Key is already in progress"
+            )
+        )
+        mock_get = AsyncMock(spec=GetImageUseCase)
+        mock_get.execute = AsyncMock(return_value=image_response)
+        with make_client(mock_process=mock_process, mock_get=mock_get, tmp_path=tmp_path) as client:
+            resp = client.post(
+                f"/api/v1/images/{uuid.uuid4()}/process",
+                headers={"Idempotency-Key": "process-key-1"},
+            )
+            assert resp.status_code == 409
+
+    def test_process_idempotency_key_is_forwarded(self, image_response, tmp_path):
+        mock_process = AsyncMock(spec=ProcessImageUseCase)
+        mock_process.execute = AsyncMock(return_value=True)
+        mock_get = AsyncMock(spec=GetImageUseCase)
+        mock_get.execute = AsyncMock(return_value=image_response)
+        image_id = uuid.uuid4()
+        with make_client(mock_process=mock_process, mock_get=mock_get, tmp_path=tmp_path) as client:
+            resp = client.post(
+                f"/api/v1/images/{image_id}/process",
+                headers={"Idempotency-Key": "process-key-forward"},
+            )
+            assert resp.status_code == 200
+        _, kwargs = mock_process.execute.await_args
+        assert kwargs["idempotency_key"] == "process-key-forward"
 
 
 # ── List images edge cases ───────────────────────────────────────────────────

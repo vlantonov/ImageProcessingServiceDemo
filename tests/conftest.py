@@ -64,6 +64,10 @@ def mock_repository() -> ImageRepository:
     repo.get_expired = AsyncMock(return_value=[])
     repo.delete_expired_batch = AsyncMock(return_value=[])
     repo.count = AsyncMock(return_value=0)
+    repo.get_idempotency_record = AsyncMock(return_value=None)
+    repo.create_idempotency_record = AsyncMock(return_value=True)
+    repo.complete_idempotency_record = AsyncMock(return_value=None)
+    repo.delete_idempotency_record = AsyncMock(return_value=None)
     return repo
 
 

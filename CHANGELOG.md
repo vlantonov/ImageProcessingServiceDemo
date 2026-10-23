@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Idempotency support for `POST /api/v1/images/` and
+  `POST /api/v1/images/{id}/process` using the `Idempotency-Key` header.
+  Replaying the same key+payload now safely returns the original result
+  instead of duplicating uploads or processing work.
+- New `idempotency_keys` database table and repository support for
+  in-progress/completed idempotency records.
+
+### Changed
+
+- Upload and single-image process endpoints now return `409 Conflict` for
+  idempotency key payload mismatches and in-progress duplicate submissions.
+
+### Fixed
+
+- OpenTelemetry test-process shutdown no longer emits a non-failing atexit
+  warning from `MeterProvider.shutdown` / `PrometheusMetricReader` by making
+  metrics setup idempotent and using explicit metrics shutdown.
+
 ## [2.3.0] - 2026-04-15
 
 ### Added

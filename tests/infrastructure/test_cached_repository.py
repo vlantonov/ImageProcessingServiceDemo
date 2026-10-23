@@ -100,6 +100,10 @@ class TestCachedImageRepository:
         repo.get_expired = AsyncMock(return_value=[])
         repo.delete_expired_batch = AsyncMock(return_value=[])
         repo.count = AsyncMock(return_value=0)
+        repo.get_idempotency_record = AsyncMock(return_value=None)
+        repo.create_idempotency_record = AsyncMock(return_value=True)
+        repo.complete_idempotency_record = AsyncMock(return_value=None)
+        repo.delete_idempotency_record = AsyncMock(return_value=None)
         return repo
 
     @pytest.fixture
@@ -190,3 +194,28 @@ class TestCachedImageRepository:
         # Second call should still hit DB (None not cached)
         await cached_repo.get_by_id(uuid.uuid4())
         assert inner.get_by_id.await_count == 2
+
+    async def test_idempotency_methods_delegate(self, cached_repo, inner):
+        await cached_repo.get_idempotency_record(scope="upload", key="k1")
+        await cached_repo.create_idempotency_record(
+            scope="upload",
+            key="k1",
+            request_hash="hash",
+            image_id=None,
+        )
+        await cached_repo.complete_idempotency_record(
+            scope="upload",
+            key="k1",
+            image_id=uuid.uuid4(),
+        )
+        await cached_repo.delete_idempotency_record(scope="upload", key="k1")
+
+        inner.get_idempotency_record.assert_awaited_once_with(scope="upload", key="k1")
+        inner.create_idempotency_record.assert_awaited_once_with(
+            scope="upload",
+            key="k1",
+            request_hash="hash",
+            image_id=None,
+        )
+        inner.complete_idempotency_record.assert_awaited_once()
+        inner.delete_idempotency_record.assert_awaited_once_with(scope="upload", key="k1")

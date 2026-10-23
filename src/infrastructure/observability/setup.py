@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
+_metrics_provider: MeterProvider | None = None
+_metrics_reader: PrometheusMetricReader | None = None
 
 
 def _build_resource(service_name: str) -> Resource:
@@ -50,12 +52,35 @@ def setup_tracing(
 
 def setup_metrics(*, service_name: str) -> PrometheusMetricReader:
     """Configure and set the global MeterProvider with Prometheus export."""
+    global _metrics_provider, _metrics_reader
+    if _metrics_provider is not None and _metrics_reader is not None:
+        return _metrics_reader
+
     resource = _build_resource(service_name)
     reader = PrometheusMetricReader()
-    provider = MeterProvider(resource=resource, metric_readers=[reader])
+    provider = MeterProvider(
+        resource=resource,
+        metric_readers=[reader],
+        shutdown_on_exit=False,
+    )
     metrics.set_meter_provider(provider)
+    _metrics_provider = provider
+    _metrics_reader = reader
     logger.info("Metrics configured (Prometheus endpoint)")
     return reader
+
+
+def shutdown_metrics() -> None:
+    """Shutdown metrics provider and release registered Prometheus reader."""
+    global _metrics_provider, _metrics_reader
+
+    if _metrics_provider is not None:
+        try:
+            _metrics_provider.shutdown()
+        except Exception:
+            logger.exception("Failed to shutdown OpenTelemetry metrics provider")
+    _metrics_provider = None
+    _metrics_reader = None
 
 
 def instrument_app(app: FastAPI) -> None:

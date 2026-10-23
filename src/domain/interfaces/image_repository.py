@@ -4,8 +4,18 @@ from __future__ import annotations
 
 import uuid
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from src.domain.entities.image import Image
+
+
+@dataclass(frozen=True)
+class IdempotencyRecord:
+    scope: str
+    key: str
+    request_hash: str
+    status: str
+    image_id: uuid.UUID | None
 
 
 class ImageRepository(ABC):
@@ -40,3 +50,28 @@ class ImageRepository(ABC):
 
     @abstractmethod
     async def count(self, *, status: str | None = None) -> int: ...
+
+    @abstractmethod
+    async def get_idempotency_record(self, *, scope: str, key: str) -> IdempotencyRecord | None: ...
+
+    @abstractmethod
+    async def create_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        request_hash: str,
+        image_id: uuid.UUID | None = None,
+    ) -> bool: ...
+
+    @abstractmethod
+    async def complete_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        image_id: uuid.UUID,
+    ) -> None: ...
+
+    @abstractmethod
+    async def delete_idempotency_record(self, *, scope: str, key: str) -> None: ...
