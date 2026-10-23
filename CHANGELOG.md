@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a DLQ replay helper command (`python -m src.dlq_replay`) to consume
   dead-letter messages and republish valid tasks to the processing topic, with
   dry-run mode and replay limits.
+- Documented Kafka pipeline delivery semantics as at-least-once (not
+  exactly-once), including duplicate-processing expectations.
 
 ## [2.3.0] - 2026-04-15
 

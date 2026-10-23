@@ -57,6 +57,9 @@ python -m src.dlq_replay --limit 100
 
 The worker applies a retry policy when image processing fails:
 
+- Delivery semantics for the Kafka pipeline are **at-least-once**.
+  **Exactly-once is not provided**; duplicate processing attempts are possible,
+  so processing handlers should remain idempotent.
 - Message format includes an `attempt` field (defaults to `0` if missing).
 - Failures are retried by republishing to `image.processing` with
   exponentially increasing delay:
