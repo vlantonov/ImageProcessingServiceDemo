@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 #ifdef __SSE2__
 #include <emmintrin.h>
@@ -222,6 +223,55 @@ py::array_t<uint8_t> bilinear_resize(
 }
 
 /**
+ * Bilinear interpolation resize for raw RGB/RGBA bytes.
+ *
+ * @param src       Flat pixel buffer (row-major, channels interleaved)
+ * @param src_w     Source width
+ * @param src_h     Source height
+ * @param channels  3 (RGB) or 4 (RGBA)
+ * @param dst_w     Target width
+ * @param dst_h     Target height
+ * @return          Resized flat pixel buffer as Python bytes
+ */
+py::bytes bilinear_resize_bytes(
+    py::buffer src,
+    int src_w,
+    int src_h,
+    int channels,
+    int dst_w,
+    int dst_h)
+{
+    if (channels != 3 && channels != 4) {
+        throw std::invalid_argument("channels must be 3 (RGB) or 4 (RGBA)");
+    }
+    if (src_w <= 0 || src_h <= 0 || dst_w <= 0 || dst_h <= 0) {
+        throw std::invalid_argument("dimensions must be positive");
+    }
+
+    const auto src_buf = src.request();
+    const auto expected = static_cast<py::ssize_t>(src_w) * src_h * channels;
+    if (src_buf.size != expected) {
+        throw std::invalid_argument("src buffer size mismatch");
+    }
+
+    const auto* src_data = static_cast<const uint8_t*>(src_buf.ptr);
+    const auto dst_size = static_cast<py::ssize_t>(dst_w) * dst_h * channels;
+    std::string output(static_cast<size_t>(dst_size), '\0');
+    auto* dst_data = reinterpret_cast<uint8_t*>(output.data());
+
+    {
+        py::gil_scoped_release release;
+#ifdef __SSE2__
+        bilinear_resize_sse2(src_data, src_w, src_h, channels, dst_data, dst_w, dst_h);
+#else
+        bilinear_resize_scalar(src_data, src_w, src_h, channels, dst_data, dst_w, dst_h);
+#endif
+    }
+
+    return py::bytes(output);
+}
+
+/**
  * Fit image into a bounding box while preserving aspect ratio.
  * Returns (new_width, new_height).
  */
@@ -251,6 +301,12 @@ PYBIND11_MODULE(fast_resize, m) {
           py::arg("channels"), py::arg("dst_w"), py::arg("dst_h"),
           "Bilinear interpolation resize for 8-bit RGB/RGBA pixel buffers.\n\n"
           "Accepts and returns NumPy uint8 arrays for zero-copy I/O.");
+
+    m.def("bilinear_resize_bytes", &fast_resize::bilinear_resize_bytes,
+          py::arg("src"), py::arg("src_w"), py::arg("src_h"),
+          py::arg("channels"), py::arg("dst_w"), py::arg("dst_h"),
+          "Bilinear interpolation resize for 8-bit RGB/RGBA bytes.\n\n"
+          "Accepts a bytes-like source and returns resized bytes.");
 
     m.def("fit_dimensions", &fast_resize::fit_dimensions,
           py::arg("src_w"), py::arg("src_h"),
