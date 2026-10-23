@@ -21,6 +21,7 @@ from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
 from src.main import app
 from src.presentation.api.dependencies import (
+    _rate_limiters,
     get_get_image_use_case,
     get_list_use_case,
     get_process_use_case,
@@ -74,6 +75,7 @@ def client(image_response, tmp_path) -> TestClient:
         yield
 
     app.router.lifespan_context = _noop_lifespan
+    _rate_limiters.clear()
 
     mock_upload = AsyncMock(spec=UploadImageUseCase)
     mock_upload.execute = AsyncMock(return_value=image_response)
@@ -110,6 +112,7 @@ def client(image_response, tmp_path) -> TestClient:
         yield TestClient(app)
 
     app.dependency_overrides.clear()
+    _rate_limiters.clear()
 
 
 class TestHealthEndpoint:
@@ -189,6 +192,7 @@ def auth_client(image_response, tmp_path) -> TestClient:
         yield
 
     app.router.lifespan_context = _noop_lifespan
+    _rate_limiters.clear()
 
     mock_upload = AsyncMock(spec=UploadImageUseCase)
     mock_upload.execute = AsyncMock(return_value=image_response)
@@ -225,6 +229,7 @@ def auth_client(image_response, tmp_path) -> TestClient:
         yield TestClient(app)
 
     app.dependency_overrides.clear()
+    _rate_limiters.clear()
 
 
 class TestApiKeyAuth:

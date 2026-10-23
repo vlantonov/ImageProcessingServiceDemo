@@ -6,8 +6,10 @@ import uuid
 
 import pytest
 
-from src.application.use_cases.process_image import ProcessImageUseCase
+from src.application.use_cases.idempotency import IdempotencyInProgressError
+from src.application.use_cases.process_image import ProcessImageUseCase, _hash_process_request
 from src.domain.entities.image import ProcessingStatus
+from src.domain.interfaces.image_repository import IdempotencyRecord
 
 
 @pytest.mark.asyncio
@@ -86,3 +88,42 @@ async def test_process_image_cleans_up_thumbnail_on_save_failure(
 
     assert entity.status == ProcessingStatus.FAILED
     mock_storage.delete.assert_awaited_once_with("/data/images/thumb_test.png")
+
+
+@pytest.mark.asyncio
+async def test_process_idempotency_replay_skips_processing(
+    sample_image_entity, mock_repository, mock_storage, mock_processor
+):
+    mock_repository.get_idempotency_record.return_value = IdempotencyRecord(
+        scope="process-image",
+        key="k1",
+        request_hash=_hash_process_request(sample_image_entity.id),
+        status="completed",
+        image_id=sample_image_entity.id,
+    )
+
+    uc = ProcessImageUseCase(mock_repository, mock_storage, mock_processor)
+    ok = await uc.execute(sample_image_entity.id, idempotency_key="k1")
+
+    assert ok is True
+    mock_repository.get_by_id.assert_not_called()
+    mock_storage.retrieve.assert_not_called()
+    mock_processor.generate_thumbnail.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_process_idempotency_in_progress_raises(
+    sample_image_entity, mock_repository, mock_storage, mock_processor
+):
+    mock_repository.get_idempotency_record.return_value = IdempotencyRecord(
+        scope="process-image",
+        key="k1",
+        request_hash=_hash_process_request(sample_image_entity.id),
+        status="in_progress",
+        image_id=sample_image_entity.id,
+    )
+
+    uc = ProcessImageUseCase(mock_repository, mock_storage, mock_processor)
+
+    with pytest.raises(IdempotencyInProgressError):
+        await uc.execute(sample_image_entity.id, idempotency_key="k1")
