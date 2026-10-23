@@ -79,7 +79,13 @@ async def run_worker() -> None:
     )
 
     process_uc = ProcessImageUseCase(repository, storage, processor)
-    consumer_uc = ConsumeProcessingTasksUseCase(broker, process_uc)
+    consumer_uc = ConsumeProcessingTasksUseCase(
+        broker,
+        process_uc,
+        retry_max_attempts=settings.kafka_retry_max_attempts,
+        retry_backoff_seconds=settings.kafka_retry_backoff_seconds,
+        dlq_topic=settings.kafka_dlq_topic,
+    )
 
     shutdown = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -87,9 +93,11 @@ async def run_worker() -> None:
         loop.add_signal_handler(sig, shutdown.set)
 
     logger.info(
-        "Worker started — consuming from '%s' (group=%s)",
+        "Worker started — consuming from '%s' (group=%s retry_max=%d dlq=%s)",
         IMAGE_PROCESSING_TOPIC,
         settings.kafka_consumer_group,
+        settings.kafka_retry_max_attempts,
+        settings.kafka_dlq_topic,
     )
 
     try:
