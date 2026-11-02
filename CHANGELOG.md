@@ -31,6 +31,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a Kafka topology diagram in the README for the async processing path
   (upload API → `image.processing` topic → worker → PostgreSQL).
 
+## [2.4.0] - 2026-11-02
+
+### Added
+
+- C++ image processor adapter (`CppImageProcessor`) that uses the pybind11
+  `fast_resize` module for thumbnail resizing while preserving the existing
+  async processor contract.
+- Processing backend factory with explicit `IMG_PROCESSING_BACKEND` selection
+  (`pillow` or `cpp`) shared by API and Kafka worker wiring.
+- Reproducible resize benchmark script (`cpp/benchmark_resize.py`) that reports
+  Pillow vs C++ latency and median speedup.
+- Tests for C++ processor integration behavior and processing backend selection.
+
+### Changed
+
+- C++ module now exports `bilinear_resize_bytes(...)` in addition to the NumPy
+  API, enabling direct bytes-based integration from the service pipeline.
+
 ## [2.3.0] - 2026-04-15
 
 ### Added
