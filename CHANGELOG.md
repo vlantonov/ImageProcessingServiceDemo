@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-02
+
 ### Added
 
 - C++ image processor adapter (`CppImageProcessor`) that uses the pybind11
@@ -407,7 +409,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.0...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.3...v2.3.0
+[2.2.3]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.2...v2.2.3
+[2.2.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.1...v2.2.2
+[2.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.1...v2.0.2
