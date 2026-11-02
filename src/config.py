@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from urllib.parse import quote_plus
 
 from pydantic import computed_field
@@ -39,6 +40,7 @@ class Settings(BaseSettings):
     # ── Processing ───────────────────────────────────────────────────────
     processing_max_workers: int = 4
     thumbnail_max_size: int = 256
+    processing_backend: Literal["pillow", "cpp"] = "pillow"
 
     # ── Cache ─────────────────────────────────────────────────────────
     cache_ttl_seconds: int = 60

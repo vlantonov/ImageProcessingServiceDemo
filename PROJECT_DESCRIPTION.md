@@ -203,11 +203,11 @@ All settings are provided via environment variables (prefix `IMG_`) using **pyda
 
 ## C++ Performance Module (Nice-to-Have)
 
-For particularly performance-critical image processing scenarios, the project includes an **optional C++ module** compiled with pybind11:
+For particularly performance-critical image processing scenarios, the project includes a **pybind11-backed C++ alternative**:
 
-- **`fast_resize.cpp`**: Implements bilinear interpolation for 8-bit RGB/RGBA image resizing, achieving 10–100× speedup over pure-Python Pillow for large batch operations.
-- Built with CMake (C++17, `-O3` optimization) and directly callable from Python as `fast_resize.bilinear_resize()`.
-- The module is optional — the service runs fully functional without it, using Pillow as the default processor.
+- **`fast_resize.cpp`**: Implements bilinear interpolation for 8-bit RGB/RGBA image resizing.
+- Built with CMake (C++17, `-O3` optimization) and consumed by the service via `CppImageProcessor` when `IMG_PROCESSING_BACKEND=cpp`.
+- Benchmark harness (`cpp/benchmark_resize.py`) reports Pillow vs C++ latency so backend selection can be data-driven per deployment target.
 
 ---
 

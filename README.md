@@ -94,12 +94,38 @@ kubectl create namespace cv-platform
 kubectl apply -f k8s/
 ```
 
-### Build C++ Module (Optional)
+### Build C++ Module (Benchmarked Alternative Backend)
 
 ```bash
 pip install pybind11
 cd cpp && ./build.sh
 ```
+
+Enable C++ thumbnailing backend:
+
+```bash
+export IMG_PROCESSING_BACKEND=cpp
+```
+
+If `IMG_PROCESSING_BACKEND=cpp` is set and the module is missing, startup fails
+with an explicit error so performance behavior is never ambiguous.
+
+### Benchmark Pillow vs C++ Resize
+
+```bash
+# Requires built module in cpp/build/
+python cpp/benchmark_resize.py
+```
+
+Latest local run (`4096x3072 PNG -> 256px`, 25 iterations):
+
+| Backend | Median (ms) | P95 (ms) |
+|---|---:|---:|
+| Pillow | 255.46 | 292.50 |
+| C++ pybind11 | 266.99 | 298.44 |
+
+Speedup (median): `0.96x` (C++ path was slightly slower on this machine;
+rerun benchmark on your target hardware).
 
 ## API Endpoints
 
@@ -134,6 +160,7 @@ All settings via environment variables (prefix `IMG_`), validated by [pydantic-s
 | `IMG_STORAGE_BASE_DIR` | `/data/images` | Image file storage path |
 | `IMG_PROCESSING_MAX_WORKERS` | `4` | ProcessPoolExecutor workers |
 | `IMG_THUMBNAIL_MAX_SIZE` | `256` | Thumbnail max dimension (px) |
+| `IMG_PROCESSING_BACKEND` | `pillow` | Thumbnail backend (`pillow` or `cpp`) |
 | `IMG_RETENTION_BATCH_SIZE` | `100` | Expired images per sweep |
 | `IMG_API_KEY` | *(empty)* | API key for `X-API-Key` header auth (empty = disabled) |
 | `IMG_RATE_LIMIT_UPLOAD_MAX` | `10` | Max upload requests per window per IP |
@@ -172,7 +199,7 @@ migrations/                            # Alembic database migrations
 ├── env.py                             # Async migration environment
 └── versions/                          # Versioned schema change scripts
 
-cpp/                                   # Optional C++ resize module (pybind11)
+cpp/                                   # C++ resize backend + benchmark harness
 k8s/                                   # Kubernetes manifests (Deployment, HPA, PVC, …)
 minikube/                              # Local K8s demo scripts
 │   └── observability/                 # Prometheus, Tempo, Loki, Grafana manifests
@@ -186,4 +213,3 @@ pytest tests/ -v
 ```
 
 All tests pass without external services — domain tests are pure unit tests, application tests use mocked ports, infrastructure tests use real Pillow/filesystem I/O, and API tests use FastAPI `TestClient` with dependency overrides.
-
