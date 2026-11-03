@@ -26,7 +26,7 @@ from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
 from src.infrastructure.database.postgres_image_repository import PostgresImageRepository
 from src.infrastructure.database.session import build_engine, build_session_factory
 from src.infrastructure.messaging.kafka_message_broker import KafkaMessageBroker
-from src.infrastructure.processing.pillow_processor import PillowImageProcessor
+from src.infrastructure.processing.factory import build_image_processor
 from src.infrastructure.storage.local_image_storage import LocalImageStorage
 from src.presentation.logging_config import configure_logging
 
@@ -67,7 +67,8 @@ async def run_worker() -> None:
     )
     storage = LocalImageStorage(settings.storage_base_dir)
     max_dim = settings.thumbnail_max_size
-    processor = PillowImageProcessor(
+    processor = build_image_processor(
+        backend=settings.processing_backend,
         max_workers=settings.processing_max_workers,
         thumbnail_max_size=(max_dim, max_dim),
     )
@@ -79,7 +80,13 @@ async def run_worker() -> None:
     )
 
     process_uc = ProcessImageUseCase(repository, storage, processor)
-    consumer_uc = ConsumeProcessingTasksUseCase(broker, process_uc)
+    consumer_uc = ConsumeProcessingTasksUseCase(
+        broker,
+        process_uc,
+        retry_max_attempts=settings.kafka_retry_max_attempts,
+        retry_backoff_seconds=settings.kafka_retry_backoff_seconds,
+        dlq_topic=settings.kafka_dlq_topic,
+    )
 
     shutdown = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -87,9 +94,11 @@ async def run_worker() -> None:
         loop.add_signal_handler(sig, shutdown.set)
 
     logger.info(
-        "Worker started — consuming from '%s' (group=%s)",
+        "Worker started — consuming from '%s' (group=%s retry_max=%d dlq=%s)",
         IMAGE_PROCESSING_TOPIC,
         settings.kafka_consumer_group,
+        settings.kafka_retry_max_attempts,
+        settings.kafka_dlq_topic,
     )
 
     try:

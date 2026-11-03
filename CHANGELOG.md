@@ -27,6 +27,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warning from `MeterProvider.shutdown` / `PrometheusMetricReader` by making
   metrics setup idempotent and using explicit metrics shutdown.
 
+## [2.5.0] - 2026-11-03
+
+### Added
+
+- Kafka consumer retry + dead-letter handling in `ConsumeProcessingTasksUseCase`:
+  processing failures are retried with exponential backoff and routed to a
+  DLQ topic after max attempts; malformed messages are dead-lettered
+  immediately.
+- New broker configuration settings:
+  `IMG_KAFKA_RETRY_MAX_ATTEMPTS`, `IMG_KAFKA_RETRY_BACKOFF_SECONDS`,
+  `IMG_KAFKA_DLQ_TOPIC`.
+- New OpenTelemetry broker counters:
+  `broker_messages_retried_total` and `broker_messages_dead_lettered_total`.
+- Unit tests for retry republish flow, retries-exhausted DLQ flow, malformed
+  payload DLQ flow, and new retry/DLQ metrics hooks.
+- Added a DLQ replay helper command (`python -m src.dlq_replay`) to consume
+  dead-letter messages and republish valid tasks to the processing topic, with
+  dry-run mode and replay limits.
+- Documented Kafka pipeline delivery semantics as at-least-once (not
+  exactly-once), including duplicate-processing expectations.
+- Added Kafka consumer observability for lag and rebalance events, and
+  extended the RED Grafana dashboard with dedicated consumer lag/rebalancing
+  panels.
+- Added a Kafka topology diagram in the README for the async processing path
+  (upload API → `image.processing` topic → worker → PostgreSQL).
+
+## [2.4.0] - 2026-11-02
+
+### Added
+
+- C++ image processor adapter (`CppImageProcessor`) that uses the pybind11
+  `fast_resize` module for thumbnail resizing while preserving the existing
+  async processor contract.
+- Processing backend factory with explicit `IMG_PROCESSING_BACKEND` selection
+  (`pillow` or `cpp`) shared by API and Kafka worker wiring.
+- Reproducible resize benchmark script (`cpp/benchmark_resize.py`) that reports
+  Pillow vs C++ latency and median speedup.
+- Tests for C++ processor integration behavior and processing backend selection.
+
+### Changed
+
+- C++ module now exports `bilinear_resize_bytes(...)` in addition to the NumPy
+  API, enabling direct bytes-based integration from the service pipeline.
+
 ## [2.3.0] - 2026-04-15
 
 ### Added
