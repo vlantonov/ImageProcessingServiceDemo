@@ -8,12 +8,39 @@ process runs the *consumer*.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 
-from aiokafka import AIOKafkaConsumer, AIOKafkaProducer  # type: ignore[import-untyped]
+from aiokafka import (  # type: ignore[import-untyped]
+    AIOKafkaConsumer,
+    AIOKafkaProducer,
+    ConsumerRebalanceListener,
+    TopicPartition,
+)
 
 from src.domain.interfaces.message_broker import Message, MessageBroker
 
 logger = logging.getLogger(__name__)
+
+
+class _MetricsRebalanceListener(ConsumerRebalanceListener):
+    def __init__(self, group: str) -> None:
+        self._group = group
+
+    async def on_partitions_revoked(self, revoked: Iterable[TopicPartition]) -> None:
+        revoked_list = list(revoked)
+        KafkaMessageBroker._record_consumer_rebalance(
+            group=self._group,
+            event="revoked",
+            partitions_count=len(revoked_list),
+        )
+
+    async def on_partitions_assigned(self, assigned: Iterable[TopicPartition]) -> None:
+        assigned_list = list(assigned)
+        KafkaMessageBroker._record_consumer_rebalance(
+            group=self._group,
+            event="assigned",
+            partitions_count=len(assigned_list),
+        )
 
 
 class KafkaMessageBroker(MessageBroker):
@@ -48,6 +75,7 @@ class KafkaMessageBroker(MessageBroker):
                 group_id=self._consumer_group,
                 auto_offset_reset="earliest",
                 enable_auto_commit=True,
+                rebalance_listener=_MetricsRebalanceListener(self._consumer_group),
             )
             await self._consumer.start()
             logger.info(
@@ -74,6 +102,17 @@ class KafkaMessageBroker(MessageBroker):
             logger.exception("Error consuming from Kafka")
             return None
 
+        topic_partition = TopicPartition(record.topic, record.partition)
+        highwater = consumer.highwater(topic_partition)
+        if highwater is not None:
+            lag = max(highwater - record.offset - 1, 0)
+            self._record_consumer_lag(
+                topic=record.topic,
+                partition=record.partition,
+                group=self._consumer_group,
+                lag=lag,
+            )
+
         return Message(
             topic=record.topic,
             key=record.key.decode() if record.key else "",
@@ -89,3 +128,42 @@ class KafkaMessageBroker(MessageBroker):
             await self._consumer.stop()
             self._consumer = None
             logger.info("Kafka consumer stopped")
+
+    @staticmethod
+    def _record_consumer_lag(
+        *,
+        topic: str,
+        partition: int,
+        group: str,
+        lag: int,
+    ) -> None:
+        try:
+            from src.infrastructure.observability.metrics import broker_consumer_lag_messages
+
+            broker_consumer_lag_messages.record(
+                lag,
+                {"topic": topic, "partition": str(partition), "group": group},
+            )
+        except Exception:
+            logger.debug("Failed to record consumer lag metric", exc_info=True)
+
+    @staticmethod
+    def _record_consumer_rebalance(
+        *,
+        group: str,
+        event: str,
+        partitions_count: int,
+    ) -> None:
+        try:
+            from src.infrastructure.observability.metrics import broker_consumer_rebalances
+
+            broker_consumer_rebalances.add(
+                1,
+                {
+                    "group": group,
+                    "event": event,
+                    "partitions_count": str(partitions_count),
+                },
+            )
+        except Exception:
+            logger.debug("Failed to record consumer rebalance metric", exc_info=True)

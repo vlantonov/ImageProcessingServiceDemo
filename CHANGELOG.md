@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Kafka consumer retry + dead-letter handling in `ConsumeProcessingTasksUseCase`:
+  processing failures are retried with exponential backoff and routed to a
+  DLQ topic after max attempts; malformed messages are dead-lettered
+  immediately.
+- New broker configuration settings:
+  `IMG_KAFKA_RETRY_MAX_ATTEMPTS`, `IMG_KAFKA_RETRY_BACKOFF_SECONDS`,
+  `IMG_KAFKA_DLQ_TOPIC`.
+- New OpenTelemetry broker counters:
+  `broker_messages_retried_total` and `broker_messages_dead_lettered_total`.
+- Unit tests for retry republish flow, retries-exhausted DLQ flow, malformed
+  payload DLQ flow, and new retry/DLQ metrics hooks.
+- Added a DLQ replay helper command (`python -m src.dlq_replay`) to consume
+  dead-letter messages and republish valid tasks to the processing topic, with
+  dry-run mode and replay limits.
+- Documented Kafka pipeline delivery semantics as at-least-once (not
+  exactly-once), including duplicate-processing expectations.
+- Added Kafka consumer observability for lag and rebalance events, and
+  extended the RED Grafana dashboard with dedicated consumer lag/rebalancing
+  panels.
+- Added a Kafka topology diagram in the README for the async processing path
+  (upload API → `image.processing` topic → worker → PostgreSQL).
+
 ## [2.4.0] - 2026-11-02
 
 ### Added
@@ -409,12 +433,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.4.0...HEAD
-[2.4.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.3.0...v2.4.0
-[2.3.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.3...v2.3.0
-[2.2.3]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.2...v2.2.3
-[2.2.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.1...v2.2.2
-[2.2.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.0...v2.2.1
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.2.0...HEAD
 [2.2.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.0.1...v2.0.2
