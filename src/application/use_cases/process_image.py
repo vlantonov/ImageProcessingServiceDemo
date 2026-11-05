@@ -6,16 +6,22 @@ ProcessPoolExecutor via asyncio.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 import uuid
 
+from src.application.use_cases.idempotency import (
+    IdempotencyConflictError,
+    IdempotencyInProgressError,
+)
 from src.domain.entities.image import ImageMetadata
 from src.domain.interfaces.image_processor import ImageProcessor
 from src.domain.interfaces.image_repository import ImageRepository
 from src.domain.interfaces.image_storage import ImageStorage
 
 logger = logging.getLogger(__name__)
+PROCESS_SCOPE = "process-image"
 
 
 class ProcessImageUseCase:
@@ -29,19 +35,48 @@ class ProcessImageUseCase:
         self._storage = storage
         self._processor = processor
 
-    async def execute(self, image_id: uuid.UUID) -> bool:
+    async def execute(self, image_id: uuid.UUID, idempotency_key: str | None = None) -> bool:
+        request_hash = _hash_process_request(image_id)
+        if idempotency_key is not None:
+            replay = await self._load_idempotent_replay(
+                key=idempotency_key,
+                request_hash=request_hash,
+            )
+            if replay is not None:
+                return replay
+            claimed = await self._repository.create_idempotency_record(
+                scope=PROCESS_SCOPE,
+                key=idempotency_key,
+                request_hash=request_hash,
+                image_id=image_id,
+            )
+            if not claimed:
+                replay = await self._load_idempotent_replay(
+                    key=idempotency_key,
+                    request_hash=request_hash,
+                )
+                if replay is not None:
+                    return replay
+                raise IdempotencyInProgressError(
+                    "Processing with this Idempotency-Key is already in progress"
+                )
+
         image = await self._repository.get_by_id(image_id)
         if image is None:
             logger.warning("Process requested for non-existent image: %s", image_id)
+            if idempotency_key is not None:
+                await self._repository.delete_idempotency_record(
+                    scope=PROCESS_SCOPE, key=idempotency_key
+                )
             return False
-
-        logger.info("Processing started: image=%s filename=%s", image_id, image.filename)
-        image.mark_processing()
-        await self._repository.save(image)
 
         start = time.perf_counter()
         thumb_path: str | None = None
         try:
+            logger.info("Processing started: image=%s filename=%s", image_id, image.filename)
+            image.mark_processing()
+            await self._repository.save(image)
+
             raw_data = await self._storage.retrieve(image.original_path)
             result = await self._processor.generate_thumbnail(raw_data)
 
@@ -76,8 +111,32 @@ class ProcessImageUseCase:
                     logger.warning("Failed to clean up thumbnail %s", thumb_path)
             image.mark_failed()
             await self._repository.save(image)
+            if idempotency_key is not None:
+                await self._repository.delete_idempotency_record(
+                    scope=PROCESS_SCOPE, key=idempotency_key
+                )
             raise
 
+        if idempotency_key is not None:
+            await self._repository.complete_idempotency_record(
+                scope=PROCESS_SCOPE,
+                key=idempotency_key,
+                image_id=image_id,
+            )
+        return True
+
+    async def _load_idempotent_replay(self, *, key: str, request_hash: str) -> bool | None:
+        record = await self._repository.get_idempotency_record(scope=PROCESS_SCOPE, key=key)
+        if record is None:
+            return None
+        if record.request_hash != request_hash:
+            raise IdempotencyConflictError(
+                "Idempotency-Key reuse with a different image_id is not allowed"
+            )
+        if record.status == "in_progress":
+            raise IdempotencyInProgressError(
+                "Processing with this Idempotency-Key is already in progress"
+            )
         return True
 
     @staticmethod
@@ -88,3 +147,8 @@ class ProcessImageUseCase:
             image_processing_duration.record(elapsed, {"operation": "thumbnail"})
         except Exception:
             pass
+
+
+def _hash_process_request(image_id: uuid.UUID) -> str:
+    payload = f"image_id:{image_id}".encode()
+    return hashlib.sha256(payload).hexdigest()

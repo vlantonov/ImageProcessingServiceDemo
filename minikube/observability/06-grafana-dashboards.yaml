@@ -360,6 +360,50 @@ data:
           "fieldConfig": {
             "defaults": { "unit": "short" }
           }
+        },
+        {
+          "title": "Consumer Lag (messages)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(broker_consumer_lag_messages_sum[5m])) by (topic) / clamp_min(sum(rate(broker_consumer_lag_messages_count[5m])) by (topic), 1)",
+              "legendFormat": "avg lag — {{topic}}"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(broker_consumer_lag_messages_bucket[5m])) by (le, topic))",
+              "legendFormat": "p95 lag — {{topic}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
+            }
+          }
+        },
+        {
+          "title": "Consumer Rebalances",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "expr": "sum(rate(broker_consumer_rebalances_total[5m])) by (group, event)",
+              "legendFormat": "{{group}} — {{event}}/s"
+            },
+            {
+              "expr": "sum(broker_consumer_rebalances_total) by (group, event)",
+              "legendFormat": "{{group}} — {{event}} total"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }
+            }
+          }
         }
       ],
       "schemaVersion": 39,
@@ -370,7 +414,7 @@ data:
       "time": { "from": "now-1h", "to": "now" },
       "title": "Image Service - RED Metrics",
       "uid": "image-service-red",
-      "version": 2
+      "version": 3
     }
   traces.json: |
     {

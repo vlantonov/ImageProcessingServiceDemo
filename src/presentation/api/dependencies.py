@@ -20,12 +20,13 @@ from src.application.use_cases.list_images import ListImagesUseCase
 from src.application.use_cases.process_image import ProcessImageUseCase
 from src.application.use_cases.upload_image import UploadImageUseCase
 from src.config import Settings
+from src.domain.interfaces.image_processor import ImageProcessor
 from src.domain.interfaces.message_broker import MessageBroker
 from src.infrastructure.cache.cached_image_repository import CachedImageRepository
 from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
 from src.infrastructure.database.postgres_image_repository import PostgresImageRepository
 from src.infrastructure.database.session import build_engine, build_session_factory
-from src.infrastructure.processing.pillow_processor import PillowImageProcessor
+from src.infrastructure.processing.factory import build_image_processor
 from src.infrastructure.storage.local_image_storage import LocalImageStorage
 from src.presentation.api.rate_limit import RateLimiter
 
@@ -86,10 +87,11 @@ def _storage() -> LocalImageStorage:
 
 
 @lru_cache
-def _processor() -> PillowImageProcessor:
+def _processor() -> ImageProcessor:
     settings = get_settings()
     max_dim = settings.thumbnail_max_size
-    return PillowImageProcessor(
+    return build_image_processor(
+        backend=settings.processing_backend,
         max_workers=settings.processing_max_workers,
         thumbnail_max_size=(max_dim, max_dim),
     )
@@ -168,6 +170,7 @@ def get_retention_use_case() -> ApplyRetentionUseCase:
 
 
 def get_consume_use_case() -> ConsumeProcessingTasksUseCase:
+    settings = get_settings()
     broker = _broker()
     if broker is None:
         from src.infrastructure.messaging.in_memory_message_broker import InMemoryMessageBroker
@@ -176,4 +179,7 @@ def get_consume_use_case() -> ConsumeProcessingTasksUseCase:
     return ConsumeProcessingTasksUseCase(
         broker=broker,
         process_use_case=get_process_use_case(),
+        retry_max_attempts=settings.kafka_retry_max_attempts,
+        retry_backoff_seconds=settings.kafka_retry_backoff_seconds,
+        dlq_topic=settings.kafka_dlq_topic,
     )

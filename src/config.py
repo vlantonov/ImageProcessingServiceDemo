@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from urllib.parse import quote_plus
 
 from pydantic import computed_field
@@ -39,6 +40,7 @@ class Settings(BaseSettings):
     # ── Processing ───────────────────────────────────────────────────────
     processing_max_workers: int = 4
     thumbnail_max_size: int = 256
+    processing_backend: Literal["pillow", "cpp"] = "pillow"
 
     # ── Cache ─────────────────────────────────────────────────────────
     cache_ttl_seconds: int = 60
@@ -51,6 +53,9 @@ class Settings(BaseSettings):
     broker_enabled: bool = False
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_consumer_group: str = "image-processing"
+    kafka_retry_max_attempts: int = 3
+    kafka_retry_backoff_seconds: float = 1.0
+    kafka_dlq_topic: str = "image.processing.dlq"
 
     # ── Rate Limiting ────────────────────────────────────────────────────
     rate_limit_upload_max: int = 10

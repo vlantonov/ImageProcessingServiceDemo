@@ -74,6 +74,8 @@ The image-service is configured via the ConfigMap with:
 - **Duration**: `http_request_duration_seconds` — request latency histogram
 - **Saturation**: `http_active_requests` — in-flight request count
 - **Image processing**: `image_processing_duration_seconds`, `image_uploads_total`
+- **Kafka consumer lag**: `broker_consumer_lag_messages` (histogram)
+- **Kafka rebalances**: `broker_consumer_rebalances_total` (counter)
 
 ## Traces
 
