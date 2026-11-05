@@ -6,11 +6,12 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.domain.entities.image import Image, ImageMetadata, ProcessingStatus
-from src.domain.interfaces.image_repository import ImageRepository
-from src.infrastructure.database.models import ImageModel
+from src.domain.interfaces.image_repository import IdempotencyRecord, ImageRepository
+from src.infrastructure.database.models import IdempotencyKeyModel, ImageModel
 
 
 class PostgresImageRepository(ImageRepository):
@@ -87,6 +88,66 @@ class PostgresImageRepository(ImageRepository):
                 stmt = stmt.where(ImageModel.status == status)
             result = await session.execute(stmt)
             return result.scalar_one()
+
+    async def get_idempotency_record(self, *, scope: str, key: str) -> IdempotencyRecord | None:
+        async with self._session_factory() as session:
+            model = await session.get(IdempotencyKeyModel, {"scope": scope, "key": key})
+            if model is None:
+                return None
+            image_id = uuid.UUID(model.image_id) if model.image_id else None
+            return IdempotencyRecord(
+                scope=model.scope,
+                key=model.key,
+                request_hash=model.request_hash,
+                status=model.status,
+                image_id=image_id,
+            )
+
+    async def create_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        request_hash: str,
+        image_id: uuid.UUID | None = None,
+    ) -> bool:
+        async with self._session_factory() as session:
+            try:
+                async with session.begin():
+                    session.add(
+                        IdempotencyKeyModel(
+                            scope=scope,
+                            key=key,
+                            request_hash=request_hash,
+                            status="in_progress",
+                            image_id=str(image_id) if image_id else None,
+                        )
+                    )
+                return True
+            except IntegrityError:
+                return False
+
+    async def complete_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        image_id: uuid.UUID,
+    ) -> None:
+        async with self._session_factory() as session, session.begin():
+            model = await session.get(IdempotencyKeyModel, {"scope": scope, "key": key})
+            if model is None:
+                return
+            model.status = "completed"
+            model.image_id = str(image_id)
+            model.updated_at = datetime.now(UTC)
+
+    async def delete_idempotency_record(self, *, scope: str, key: str) -> None:
+        async with self._session_factory() as session, session.begin():
+            stmt = delete(IdempotencyKeyModel).where(
+                IdempotencyKeyModel.scope == scope, IdempotencyKeyModel.key == key
+            )
+            await session.execute(stmt)
 
 
 # ── Mapping helpers ──────────────────────────────────────────────────────────

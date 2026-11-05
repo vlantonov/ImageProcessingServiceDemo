@@ -64,6 +64,10 @@ async def lifespan(app: FastAPI):
     broker = _broker()
     if broker is not None:
         await broker.close()
+    if _is_otel_enabled():
+        from src.infrastructure.observability.setup import shutdown_metrics
+
+        shutdown_metrics()
     await async_shutdown_executor()
     await engine.dispose()
 

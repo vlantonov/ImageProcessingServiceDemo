@@ -414,3 +414,54 @@ class TestEntityModelMapping:
 
         fetched = await repo.get_by_id(image.id)
         assert fetched.metadata.channels == 4
+
+
+# ---------------------------------------------------------------------------
+# Tests: idempotency records
+# ---------------------------------------------------------------------------
+
+
+class TestIdempotencyRecords:
+    async def test_create_and_get_idempotency_record(self, repo):
+        created = await repo.create_idempotency_record(
+            scope="upload",
+            key="k1",
+            request_hash="hash-1",
+        )
+        assert created is True
+
+        record = await repo.get_idempotency_record(scope="upload", key="k1")
+        assert record is not None
+        assert record.scope == "upload"
+        assert record.key == "k1"
+        assert record.request_hash == "hash-1"
+        assert record.status == "in_progress"
+        assert record.image_id is None
+
+    async def test_create_idempotency_record_conflict_returns_false(self, repo):
+        await repo.create_idempotency_record(scope="upload", key="k1", request_hash="hash-1")
+        created_again = await repo.create_idempotency_record(
+            scope="upload",
+            key="k1",
+            request_hash="hash-1",
+        )
+        assert created_again is False
+
+    async def test_complete_idempotency_record(self, repo):
+        image_id = uuid.uuid4()
+        await repo.create_idempotency_record(scope="upload", key="k1", request_hash="hash-1")
+
+        await repo.complete_idempotency_record(scope="upload", key="k1", image_id=image_id)
+
+        record = await repo.get_idempotency_record(scope="upload", key="k1")
+        assert record is not None
+        assert record.status == "completed"
+        assert record.image_id == image_id
+
+    async def test_delete_idempotency_record(self, repo):
+        await repo.create_idempotency_record(scope="upload", key="k1", request_hash="hash-1")
+
+        await repo.delete_idempotency_record(scope="upload", key="k1")
+
+        record = await repo.get_idempotency_record(scope="upload", key="k1")
+        assert record is None

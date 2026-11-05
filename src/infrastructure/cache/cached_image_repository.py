@@ -11,7 +11,7 @@ import logging
 import uuid
 
 from src.domain.entities.image import Image
-from src.domain.interfaces.image_repository import ImageRepository
+from src.domain.interfaces.image_repository import IdempotencyRecord, ImageRepository
 from src.infrastructure.cache.in_memory_cache import InMemoryImageCache
 
 logger = logging.getLogger(__name__)
@@ -60,3 +60,33 @@ class CachedImageRepository(ImageRepository):
 
     async def count(self, *, status: str | None = None) -> int:
         return await self._inner.count(status=status)
+
+    async def get_idempotency_record(self, *, scope: str, key: str) -> IdempotencyRecord | None:
+        return await self._inner.get_idempotency_record(scope=scope, key=key)
+
+    async def create_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        request_hash: str,
+        image_id: uuid.UUID | None = None,
+    ) -> bool:
+        return await self._inner.create_idempotency_record(
+            scope=scope,
+            key=key,
+            request_hash=request_hash,
+            image_id=image_id,
+        )
+
+    async def complete_idempotency_record(
+        self,
+        *,
+        scope: str,
+        key: str,
+        image_id: uuid.UUID,
+    ) -> None:
+        await self._inner.complete_idempotency_record(scope=scope, key=key, image_id=image_id)
+
+    async def delete_idempotency_record(self, *, scope: str, key: str) -> None:
+        await self._inner.delete_idempotency_record(scope=scope, key=key)

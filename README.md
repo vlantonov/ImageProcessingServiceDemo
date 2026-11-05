@@ -189,6 +189,30 @@ Upload, processing, and read endpoints are rate-limited per client IP (HTTP 429 
 | `POST` | `/api/v1/images/batch/process` | Process multiple images concurrently |
 | `POST` | `/api/v1/retention/sweep` | Trigger retention cleanup |
 
+### Idempotency keys (upload + process)
+
+`POST /api/v1/images/` and `POST /api/v1/images/{id}/process` support optional
+`Idempotency-Key` headers (1-255 chars).
+
+- Repeating the same request with the same key returns the original result
+  without creating duplicate work.
+- Reusing a key with different request data returns `409 Conflict`.
+- Repeating a request while the original one is still running returns
+  `409 Conflict`.
+
+Examples:
+
+```bash
+# Idempotent upload
+curl -X POST "http://localhost:8000/api/v1/images/" \
+  -H "Idempotency-Key: upload-20261024-001" \
+  -F "file=@./image.png"
+
+# Idempotent process
+curl -X POST "http://localhost:8000/api/v1/images/<IMAGE_ID>/process" \
+  -H "Idempotency-Key: process-20261024-001"
+```
+
 ## Configuration
 
 All settings via environment variables (prefix `IMG_`), validated by [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/):

@@ -42,3 +42,21 @@ class ImageModel(Base):
         Index("ix_images_created_at", "created_at"),
         Index("ix_images_expires_at", "expires_at", postgresql_where=expires_at.isnot(None)),
     )
+
+
+class IdempotencyKeyModel(Base):
+    __tablename__ = "idempotency_keys"
+
+    scope: Mapped[str] = mapped_column(String(32), primary_key=True)
+    key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="in_progress")
+    image_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
+
+    __table_args__ = (Index("ix_idempotency_keys_created_at", "created_at"),)

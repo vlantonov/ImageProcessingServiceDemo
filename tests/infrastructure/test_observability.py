@@ -12,6 +12,7 @@ from src.infrastructure.observability.setup import (
     instrument_logging,
     setup_metrics,
     setup_tracing,
+    shutdown_metrics,
 )
 
 
@@ -33,7 +34,13 @@ class TestSetupMetrics:
     def test_setup_metrics_returns_reader(self):
         reader = setup_metrics(service_name="test-svc")
         assert reader is not None
-        reader.shutdown()
+        shutdown_metrics()
+
+    def test_setup_metrics_is_idempotent(self):
+        first = setup_metrics(service_name="test-svc")
+        second = setup_metrics(service_name="test-svc")
+        assert first is second
+        shutdown_metrics()
 
 
 class TestInstrumentLogging:
