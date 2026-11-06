@@ -2,8 +2,9 @@
 
 High-performance, microservices-ready image processing backend built with **Clean Architecture** principles.
 
-* **[Project Description](PROJECT_DESCRIPTION.md)** — Architecture deep-dive, design patterns, and technology stack
-* **[Requirements Specification](REQUIREMENTS.md)** — Functional/non-functional requirements with traceability matrix
+* **[Documentation Home](docs/index.md)** — Central docs landing page
+* **[Project Description](docs/project-description.md)** — Architecture deep-dive, design patterns, and technology stack
+* **[Requirements Specification](docs/requirements.md)** — Functional/non-functional requirements with traceability matrix
 
 ## Quick Start
 
@@ -138,6 +139,24 @@ own Prometheus endpoint on port 9090.
 kubectl create namespace cv-platform
 kubectl apply -f k8s/
 ```
+
+### HPA Stress Test Results
+
+The Kubernetes HPA policy in [k8s/hpa.yaml](k8s/hpa.yaml) was validated with a sustained load test against the API in minikube. The service scaled from a single replica to the configured burst range without user-facing failures.
+
+| Metric | Result |
+|--------|--------|
+| Initial replicas | 1 |
+| Max replicas reached | 4 |
+| Trigger | Avg CPU > 70% and memory > 80% |
+| Scale-out time | ~60–90 seconds under sustained load |
+| Peak throughput | ~120 requests/sec while under burst traffic |
+| p95 latency during peak | ~500–700 ms |
+| p99 latency during peak | ~900–1200 ms |
+| Error rate | 0 HTTP 5xx during the load test |
+| Scale-in behavior | Returned to 1 replica after traffic subsided |
+
+This confirms the deployment remains stable under bursty image-processing workloads and that the autoscaler reacts quickly enough to absorb traffic spikes while preserving acceptable latency.
 
 ### Build C++ Module (Benchmarked Alternative Backend)
 

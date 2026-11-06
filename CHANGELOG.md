@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Dependabot configuration to keep Python, GitHub Actions, and Docker dependencies
+  up to date automatically with weekly review cycles.
+- Documentation site scaffold under `docs/` (Jekyll-compatible), with
+  migrated project description and requirements pages.
+
+### Changed
+
+- README documentation links now point to the new `docs/` site entry points.
+
 ## [2.6.0] - 2026-11-05
 
 ### Added
