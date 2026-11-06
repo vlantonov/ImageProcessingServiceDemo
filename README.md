@@ -2,8 +2,9 @@
 
 High-performance, microservices-ready image processing backend built with **Clean Architecture** principles.
 
-* **[Project Description](PROJECT_DESCRIPTION.md)** — Architecture deep-dive, design patterns, and technology stack
-* **[Requirements Specification](REQUIREMENTS.md)** — Functional/non-functional requirements with traceability matrix
+* **[Documentation Home](docs/index.md)** — Central docs landing page
+* **[Project Description](docs/project-description.md)** — Architecture deep-dive, design patterns, and technology stack
+* **[Requirements Specification](docs/requirements.md)** — Functional/non-functional requirements with traceability matrix
 
 ## Quick Start
 
