@@ -10,7 +10,7 @@ dependencies = [
     "asyncpg>=0.30,<1",
     "pydantic>=2.0,<3",
     "pydantic-settings>=2.0,<3",
-    "Pillow>=11.0,<12",
+    "Pillow>=11.0,<14",
     "python-multipart>=0.0.20",
     "alembic>=1.14,<2",
     "opentelemetry-api>=1.20,<2",
@@ -26,13 +26,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0,<9",
-    "pytest-asyncio>=0.24,<1",
+    "pytest>=8.0,<10",
+    "pytest-asyncio>=0.24,<2",
     "pytest-cov>=6.0,<8",
     "httpx>=0.28,<1",
     "aiosqlite>=0.20,<1",
     "ruff>=0.8,<1",
-    "mypy>=1.13,<2",
+    "mypy>=1.13,<3",
 ]
 
 [tool.ruff]
