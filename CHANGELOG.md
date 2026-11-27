@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-11-06
+
 ### Added
 
 - Dependabot configuration to keep Python, GitHub Actions, and Docker dependencies
@@ -468,7 +470,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `type: ignore` comment on `rowcount` to use correct mypy error code `attr-defined`.
 - Add proper type annotation for `settings` parameter in retention sweep endpoint.
 
-[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.6.0...HEAD
+[unreleased]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.6.1...HEAD
+[2.6.1]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.6.0...v2.6.1
 [2.6.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/vlantonov/ImageProcessingServiceDemo/compare/v2.3.0...v2.4.0
